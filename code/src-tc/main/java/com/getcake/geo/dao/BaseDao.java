@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 
+import com.getcake.geo.controller.GeoController;
 
 abstract public class BaseDao { // extends JdbcDaoSupport {
 	

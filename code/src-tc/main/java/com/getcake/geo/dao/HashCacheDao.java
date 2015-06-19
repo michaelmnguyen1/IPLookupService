@@ -15,11 +15,17 @@ import java.util.Set;
 
 import javax.sql.DataSource;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.getcake.geo.model.*;
-import com.getcake.geo.service.GeoService;
+
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.Jedis;
+import test.HostAndPortUtil;
 
 public class HashCacheDao extends BaseDao {
 
+	private static HostAndPort hnp = HostAndPortUtil.getRedisServers().get(0);
 	private static int IPV4_MAX_TOP_LEVEL_CACHE_SIZE = 10_000_000; 
 	private static int IPV4_4BYTES_CACHE_SIZE = 1_100_000; 
 	private static int LOAD_LOG_INTERVAL = 1_000_000;
@@ -34,23 +40,9 @@ public class HashCacheDao extends BaseDao {
 	private Ipv4Cache ipv4Cache = null;
 	private Ipv6Cache ipv6Cache = null;
 	
-	private static HashCacheDao instance;
-	
-	private HashCacheDao () {
+	public HashCacheDao () {
 	}
 
-	static {
-    	try {
-        	instance = new HashCacheDao ();    		
-    	} catch (Throwable exc) {
-    		logger.error("", exc);
-    	}		
-	}
-	
-	public static HashCacheDao getInstance () {
-		return instance;
-	}	
-		
 	public void setSqlGetIpLookup (String sqlGetIpLookup) {
 		this.sqlGetIpLookup = sqlGetIpLookup;
 	}
@@ -67,7 +59,7 @@ public class HashCacheDao extends BaseDao {
 	public long loadCacheIpv6 (boolean flushCacheFlag, long topNumRows) {
 		
 		int numBytes = 16;
-		long startTime, endTime, locationId, count;
+		long startTime, endTime, locationId;
 		startTime = Calendar.getInstance().getTimeInMillis();
 		
 		if (ipv6Cache == null) {
@@ -81,21 +73,18 @@ public class HashCacheDao extends BaseDao {
 		}
 
 		int accCount = 0;
-		for (int startByteNum = 1; startByteNum < 16; startByteNum++) {
-			count = loadCacheIpv6FirstNByte (ipv6Cache, flushCacheFlag, startByteNum, numBytes, topNumRows);
-			if (count == 0) {
-				break;
-			}
-			accCount += count;
+		// To do: dynamically determine max number of matching bytes for ipv6.  For now use static analysis which 
+		// comes out to be 9.
+		for (int startByteNum = 1; startByteNum < 9; startByteNum++) {
+			accCount += loadCacheIpv6FirstNByte (ipv6Cache, flushCacheFlag, startByteNum, numBytes, topNumRows);
 		}
 
-		endTime = Calendar.getInstance().getTimeInMillis();
+		endTime = Calendar.getInstance().getTimeInMillis();    	
 		logger.debug("ipv6 loaded dur(ms):" + (endTime - startTime) + 
 				" -totalNodes:" + ipv6Cache.numNodes +  
 				" - MaxNodeLength:" + ipv6Cache.maxNodeLength + " - ipvipCache.NodeLength:" + ipv6Cache.minNodeLength +
 				" - MaxNodeIpStart: " + ipv6Cache.maxNodeIpStart + " - ipv6IpCache.maxNodeIpEnd: " + ipv6Cache.maxNodeIpEnd +
 				" - MinNodeIpStart: " + ipv6Cache.minNodeIpStart + " - ipv6IpCache.minNodeIpEnd: " + ipv6Cache.minNodeIpEnd);
-		logger.debug("");
     	
 		return ipv6Cache.numNodes;
 	}
@@ -137,7 +126,6 @@ public class HashCacheDao extends BaseDao {
 				" - MaxNodeLength:" + ipv4Cache.maxNodeLength + " - ipvipCache.NodeLength:" + ipv4Cache.minNodeLength +
 				" - MaxNodeIpStart: " + ipv4Cache.maxNodeIpStart + " - ipv4IpCache.maxNodeIpEnd: " + ipv4Cache.maxNodeIpEnd +
 				" - MinNodeIpStart: " + ipv4Cache.minNodeIpStart + " - ipv4IpCache.minNodeIpEnd: " + ipv4Cache.minNodeIpEnd);
-		logger.debug("");
     	
 		return ipv4Cache.numNodes;
 	}
@@ -159,6 +147,7 @@ public class HashCacheDao extends BaseDao {
 		
 		try {			
 			startTime = Calendar.getInstance().getTimeInMillis();
+			Class.forName("net.sourceforge.jtds.jdbc.Driver");
 			sourceConn = dataSource.getConnection(); //  DriverManager.getConnection(url, username, password);
 			midByteNum = startByteNum + 1;
 			endByteLen = numBytes - startByteNum;
@@ -256,24 +245,22 @@ public class HashCacheDao extends BaseDao {
 				prevBytePrefixNum = bytePrefixNum;
 				
 			}  
-			if (count > 0) {
-				if (nodeLists != null) {
-					nodeLists.setStartArray(startList.stream().mapToLong(i->i).toArray());
-					nodeLists.setEndArray(endList.stream().mapToLong(i->i).toArray());
-					nodeLists.setLocationIdArray(locationIdList.stream().mapToInt(i->i).toArray());				
-				}
-				
-				if (startList.size() > ipCache.maxNodeLength) {
-					ipCache.maxNodeLength = startList.size();
-					ipCache.maxNodeIpStart = "startList.size() > ipCache.maxNodeLength";
-					ipCache.maxNodeIpEnd = "startList.size() > ipCache.maxNodeLength";
-				}
-				if (startList.size() < ipCache.minNodeLength) {
-					ipCache.minNodeLength = startList.size();
-					ipCache.maxNodeIpStart = "startList.size() < ipCache.minNodeLength";
-					ipCache.maxNodeIpEnd = "startList.size() < ipCache.minNodeLength";
-				}																								
+			if (nodeLists != null) {
+				nodeLists.setStartArray(startList.stream().mapToLong(i->i).toArray());
+				nodeLists.setEndArray(endList.stream().mapToLong(i->i).toArray());
+				nodeLists.setLocationIdArray(locationIdList.stream().mapToInt(i->i).toArray());				
 			}
+			
+			if (startList.size() > ipCache.maxNodeLength) {
+				ipCache.maxNodeLength = startList.size();
+				ipCache.maxNodeIpStart = "startList.size() > ipCache.maxNodeLength";
+				ipCache.maxNodeIpEnd = "startList.size() > ipCache.maxNodeLength";
+			}
+			if (startList.size() < ipCache.minNodeLength) {
+				ipCache.minNodeLength = startList.size();
+				ipCache.maxNodeIpStart = "startList.size() < ipCache.minNodeLength";
+				ipCache.maxNodeIpEnd = "startList.size() < ipCache.minNodeLength";
+			}																				
 			endTime = Calendar.getInstance().getTimeInMillis();
 
 			logger.debug("ipv4 byte(s):" + startByteNum + " - dur(ms):" + (endTime - startTime) + 
@@ -306,6 +293,7 @@ public class HashCacheDao extends BaseDao {
 		
 		try {			
 			startTime = Calendar.getInstance().getTimeInMillis();
+			Class.forName("net.sourceforge.jtds.jdbc.Driver");
 			sourceConn = dataSource.getConnection(); //  DriverManager.getConnection(url, username, password);
 			midByteNum = startByteNum + 1;
 			endByteLen = numBytes - startByteNum;
@@ -404,24 +392,22 @@ public class HashCacheDao extends BaseDao {
 				locationIdList.add(locationId);
 				prevBytePrefixNum = bytePrefixNum;				
 			}  
-			if (count > 0) {
-				if (nodeLists != null) {
-					nodeLists.setStartArray(convertToArray (startList));
-					nodeLists.setEndArray(convertToArray (endList));
-					nodeLists.setLocationIdArray(locationIdList.stream().mapToInt(i->i).toArray());				
-				}
-				
-				if (startList.size() > ipCache.maxNodeLength) {
-					ipCache.maxNodeLength = startList.size();
-					ipCache.maxNodeIpStart = "startList.size() > ipCache.maxNodeLength";
-					ipCache.maxNodeIpEnd = "startList.size() > ipCache.maxNodeLength";
-				}
-				if (startList.size() < ipCache.minNodeLength) {
-					ipCache.minNodeLength = startList.size();
-					ipCache.maxNodeIpStart = "startList.size() < ipCache.minNodeLength";
-					ipCache.maxNodeIpEnd = "startList.size() < ipCache.minNodeLength";
-				}																								
+			if (nodeLists != null) {
+				nodeLists.setStartArray(convertToArray (startList));
+				nodeLists.setEndArray(convertToArray (endList));
+				nodeLists.setLocationIdArray(locationIdList.stream().mapToInt(i->i).toArray());				
 			}
+			
+			if (startList.size() > ipCache.maxNodeLength) {
+				ipCache.maxNodeLength = startList.size();
+				ipCache.maxNodeIpStart = "startList.size() > ipCache.maxNodeLength";
+				ipCache.maxNodeIpEnd = "startList.size() > ipCache.maxNodeLength";
+			}
+			if (startList.size() < ipCache.minNodeLength) {
+				ipCache.minNodeLength = startList.size();
+				ipCache.maxNodeIpStart = "startList.size() < ipCache.minNodeLength";
+				ipCache.maxNodeIpEnd = "startList.size() < ipCache.minNodeLength";
+			}																				
 			endTime = Calendar.getInstance().getTimeInMillis();
 
 			logger.debug("ipv6 byte(s):" + startByteNum + " - dur(ms):" + (endTime - startTime) + 
@@ -449,6 +435,7 @@ public class HashCacheDao extends BaseDao {
 		
 		try {			
 			startTime = Calendar.getInstance().getTimeInMillis();
+			Class.forName("net.sourceforge.jtds.jdbc.Driver");
 			sourceConn = dataSource.getConnection(); 
 			sourceStmt = sourceConn.prepareStatement(sqlGetLocationInfo);								
 			sourceRs = sourceStmt.executeQuery();
@@ -538,6 +525,7 @@ public class HashCacheDao extends BaseDao {
 			
 			startTime = Calendar.getInstance().getTimeInMillis();
 
+			Class.forName("net.sourceforge.jtds.jdbc.Driver");
 			sourceConn = dataSource.getConnection(); //  DriverManager.getConnection(url, username, password);
 			sourceStmt = sourceConn.prepareStatement(sqlPrefix + " t.ipv6_start,  t.ipv6_end, location_id " +
 						"FROM _shared.dbo.ipv6_city_A t  (nolock) " +
@@ -778,6 +766,7 @@ public class HashCacheDao extends BaseDao {
 		
 		try {			
 			startTime = Calendar.getInstance().getTimeInMillis();
+			Class.forName("net.sourceforge.jtds.jdbc.Driver");
 			sourceConn = dataSource.getConnection(); //  DriverManager.getConnection(url, username, password);
 			midByteNum = startByteNum + 1;
 			endByteLen = 4 - startByteNum;
@@ -923,6 +912,7 @@ sql = sqlPrefix + " SUBSTRING(t.ipv6_start, 1, " + startByteNum + ") as bytePref
 		
 		try {			
 			startTime = Calendar.getInstance().getTimeInMillis();
+			Class.forName("net.sourceforge.jtds.jdbc.Driver");
 			sourceConn = dataSource.getConnection(); //  DriverManager.getConnection(url, username, password);
 			midByteNum = startByteNum + 1;
 			endByteLen = 4 - startByteNum;
@@ -1093,6 +1083,7 @@ sql = sqlPrefix + " SUBSTRING(t.ipv6_start, 1, " + startByteNum + ") as bytePref
 
 			startTime = Calendar.getInstance().getTimeInMillis();
 
+			Class.forName("net.sourceforge.jtds.jdbc.Driver");
 			sourceConn = dataSource.getConnection(); //  DriverManager.getConnection(url, username, password);
 			sourceStmt = sourceConn.prepareStatement(
 "SELECT SUBSTRING(t.ipv6_start, 1, 3) as bytePrefixStr, SUBSTRING(t.ipv6_start, 4, 1) as byteStartStr, " +
@@ -1178,6 +1169,7 @@ sql = sqlPrefix + " SUBSTRING(t.ipv6_start, 1, " + startByteNum + ") as bytePref
 
 			startTime = Calendar.getInstance().getTimeInMillis();
 
+			Class.forName("net.sourceforge.jtds.jdbc.Driver");
 			sourceConn = dataSource.getConnection(); //  DriverManager.getConnection(url, username, password);
 			sourceStmt = sourceConn.prepareStatement(
 "SELECT SUBSTRING(t.ipv6_start, 1, 2) as bytePrefixStr, SUBSTRING(t.ipv6_start, 3, 2) as byteStartStr, " +
@@ -1263,6 +1255,7 @@ sql = sqlPrefix + " SUBSTRING(t.ipv6_start, 1, " + startByteNum + ") as bytePref
 
 			startTime = Calendar.getInstance().getTimeInMillis();
 
+			Class.forName("net.sourceforge.jtds.jdbc.Driver");
 			sourceConn = dataSource.getConnection(); //  DriverManager.getConnection(url, username, password);
 			sourceStmt = sourceConn.prepareStatement(
 "SELECT TOP 23 SUBSTRING(t.ipv6_start, 1, 1) as bytePrefixStr, SUBSTRING(t.ipv6_start, 2, 3) as byteStartStr, " +
@@ -1356,7 +1349,7 @@ sql = sqlPrefix + " SUBSTRING(t.ipv6_start, 1, " + startByteNum + ") as bytePref
 
 			numNodes = 0;
 			startTime = Calendar.getInstance().getTimeInMillis();
-			
+			Class.forName("net.sourceforge.jtds.jdbc.Driver");
 			sourceConn = dataSource.getConnection(); //  DriverManager.getConnection(url, username, password);
 			sourceStmt = sourceConn.prepareStatement(
 "SELECT SUBSTRING(t.ipv6_start, 1, 1) as bytePrefixStr, SUBSTRING(t.ipv6_start, 2, 3) as byteStartStr, " +
@@ -1401,7 +1394,7 @@ sql = sqlPrefix + " SUBSTRING(t.ipv6_start, 1, " + startByteNum + ") as bytePref
 						
 			numNodes = 0;
 			startTime = Calendar.getInstance().getTimeInMillis();
-			
+			Class.forName("net.sourceforge.jtds.jdbc.Driver");
 			sourceConn = dataSource.getConnection(); //  DriverManager.getConnection(url, username, password);
 			sourceStmt = sourceConn.prepareStatement(
 "SELECT SUBSTRING(t.ipv6_start, 1, 2) as bytePrefixStr, SUBSTRING(t.ipv6_start, 3, 2) as byteStartStr, " +
@@ -1446,7 +1439,7 @@ sql = sqlPrefix + " SUBSTRING(t.ipv6_start, 1, " + startByteNum + ") as bytePref
 			
 			numNodes = 0;
 			startTime = Calendar.getInstance().getTimeInMillis();
-			
+			Class.forName("net.sourceforge.jtds.jdbc.Driver");
 			sourceConn = dataSource.getConnection(); //  DriverManager.getConnection(url, username, password);
 			sourceStmt = sourceConn.prepareStatement(
 "SELECT SUBSTRING(t.ipv6_start, 1, 3) as bytePrefixStr, SUBSTRING(t.ipv6_start, 4, 1) as byteStartStr, " +
@@ -1516,7 +1509,7 @@ sql = sqlPrefix + " SUBSTRING(t.ipv6_start, 1, " + startByteNum + ") as bytePref
 		try {			
 			numNodes = 0;
 			startTime = Calendar.getInstance().getTimeInMillis();
-			
+			Class.forName("net.sourceforge.jtds.jdbc.Driver");
 			sourceConn = dataSource.getConnection(); //  DriverManager.getConnection(url, username, password);
 			sourceStmt = sourceConn.prepareStatement(
 "SELECT t.ipv6_start as byteStartStr, " +
@@ -1580,7 +1573,7 @@ sql = sqlPrefix + " SUBSTRING(t.ipv6_start, 1, " + startByteNum + ") as bytePref
 		try {			
 			numNodes = 0;
 			startTime = Calendar.getInstance().getTimeInMillis();
-			
+			Class.forName("net.sourceforge.jtds.jdbc.Driver");
 			sourceConn = dataSource.getConnection(); //  DriverManager.getConnection(url, username, password);
 			sourceStmt = sourceConn.prepareStatement(
 "SELECT SUBSTRING(t.ipv6_start, 1, 8) as byteStartStr, " +
@@ -1831,7 +1824,7 @@ sql = sqlPrefix + " SUBSTRING(t.ipv6_start, 1, " + startByteNum + ") as bytePref
 
 		try {
 
-			logger.debug ("hnp.getHost():" + hnp.getHost() + " - maxNumOps:" + maxNumOps);
+			System.out.println ("hnp.getHost():" + hnp.getHost() + " - maxNumOps:" + maxNumOps);
 			if (flushCacheFlag && testfirstLevelCache != null && testfirstLevelCache.size() > 0) {
 				testfirstLevelCache.clear();	
 			}
@@ -1845,21 +1838,21 @@ sql = sqlPrefix + " SUBSTRING(t.ipv6_start, 1, " + startByteNum + ") as bytePref
 				testfirstLevelCache.put(key.toString() + numOps, "bar" + numOps);
 			}
 			long elapsed = Calendar.getInstance().getTimeInMillis() - begin;
-			logger.debug("Set maxNumOps: " + maxNumOps + " elapsed(ms): " + elapsed + " - in sec:" + (float)((float)elapsed / 1000.0));
+			System.out.println("Set maxNumOps: " + maxNumOps + " elapsed(ms): " + elapsed + " - in sec:" + (float)((float)elapsed / 1000.0));
 			float opsrate = (float)maxNumOps / (float)elapsed;
-			logger.debug("Set ops/ms = " + opsrate + " - ops/sec: " + opsrate * 1000);
+			System.out.println("Set ops/ms = " + opsrate + " - ops/sec: " + opsrate * 1000);
 	
 			begin = Calendar.getInstance().getTimeInMillis();
 			for (numOps = 0; numOps <= maxNumOps; numOps++) {
 				value = testfirstLevelCache.get(key.toString() + numOps);
 				if (value == null) {
-					logger.debug("key:" + key.toString() + numOps + " - value is null");					
+					System.out.println("key:" + key.toString() + numOps + " - value is null");					
 				}
 			}
 			elapsed = Calendar.getInstance().getTimeInMillis() - begin;
-			logger.debug("Get maxNumOps: " + maxNumOps + " elapsed(ms): " + elapsed + " - in sec:" + (float)((float)elapsed / 1000.0));
+			System.out.println("Get maxNumOps: " + maxNumOps + " elapsed(ms): " + elapsed + " - in sec:" + (float)((float)elapsed / 1000.0));
 			opsrate = (float)maxNumOps / (float)elapsed;
-			logger.debug("Get ops/ms = " + opsrate + " - ops/sec: " + opsrate * 1000);
+			System.out.println("Get ops/ms = " + opsrate + " - ops/sec: " + opsrate * 1000);
 
 		} catch (Throwable exc) {
 			exc.printStackTrace();

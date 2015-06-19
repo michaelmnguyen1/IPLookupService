@@ -5,7 +5,6 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.getcake.geo.controller.GeoController;
 import com.getcake.geo.dao.*;
 import com.getcake.geo.model.*;
 
@@ -17,11 +16,10 @@ public class GeoService {
 
 	protected static final Logger logger = LoggerFactory.getLogger(GeoService.class);
 	
-	/* memSqlDao, elasticCacheDao and redisCacheDao are no longer used.  They are left here for historical purpsoes */
-	/*
 	@Autowired
 	private MsSqlDao msSqlDao;
 	
+	/* memSqlDao, elasticCacheDao and redisCacheDao are no longer used.  They are left here for historical purpsoes */
 	@Autowired
 	private MemSqlDao memSqlDao;
 	
@@ -30,7 +28,6 @@ public class GeoService {
 	
 	@Autowired
 	private RedisCacheDao redisCacheDao;
-	*/
 	
 	@Autowired
 	private HashCacheDao hashCacheDao;
