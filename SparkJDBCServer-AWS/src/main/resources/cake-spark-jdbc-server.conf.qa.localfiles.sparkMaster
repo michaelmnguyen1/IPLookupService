@@ -1,0 +1,31 @@
+spark.logConf=true
+spark.executor.cores=8
+# spark.cores.max=16
+spark.localExecution.enabled=true
+
+spark.default.parallelism=30
+spark.shuffle.memoryFraction=0.9
+spark.reducer.maxSizeInFlight=28g
+spark.shuffle.spill=false
+
+spark.localExecution.enabled=true
+spark.locality.wait=60s
+
+spark.executor.memory=28g
+spark.driver.memory=28g
+spark.driver.cores=8
+spark.driver.maxResultSize=0
+spark.app.name=Cake-Spark-JDBC-Server
+spark.master=spark://ip-10-128-1-78:7077
+
+spark.eventLog.enabled=false
+
+spark.executor.extraJavaOptions=-XX:+UseCompressedOops -XX:+PrintGCDetails -XX:+PrintGCTimeStamps
+
+# App-specific
+ipv6_cityFileName=/home/ec2-user/ipdata/ipv6_city.csv
+citiesFileName=/home/ec2-user/ipdata/cities.csv
+ipv6_ispFileName=/home/ec2-user/ipdata/ipv6_isp.csv
+ispsFileName=/home/ec2-user/ipdata/isps.csv
+cacheFlag=true
+
