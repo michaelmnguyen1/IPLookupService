@@ -1,0 +1,38 @@
+geoDataVersion=201509151532
+
+dataSourceType=msSql
+dbDriver=net.sourceforge.jtds.jdbc.Driver
+user=language_text
+password=language_text
+
+dbJdbcUrl.default=jdbc:jtds:sqlserver://us1-rds-sql-001.cb6hlnirjjxn.us-east-1.rds.amazonaws.com:1433/dataimports
+
+dbJdbcUrl.us-west-2=jdbc:jtds:sqlserver://us1-rds-sql-001.cb6hlnirjjxn.us-east-1.rds.amazonaws.com:1433/dataimports
+dbJdbcUrl.us-east-1=jdbc:jtds:sqlserver://us1-rds-sql-001.cb6hlnirjjxn.us-east-1.rds.amazonaws.com:1433/dataimports
+dbJdbcUrl.eu-west-1=jdbc:jtds:sqlserver://us1-rds-sql-001.cb6hlnirjjxn.us-east-1.rds.amazonaws.com:1433/dataimports
+dbJdbcUrl.eu-central-1=jdbc:jtds:sqlserver://us1-rds-sql-001.cb6hlnirjjxn.us-east-1.rds.amazonaws.com:1433/dataimports
+dbJdbcUrl.ap-southeast-1=jdbc:jtds:sqlserver://us1-rds-sql-001.cb6hlnirjjxn.us-east-1.rds.amazonaws.com:1433/dataimports
+dbJdbcUrl.ap-northeast-1=jdbc:jtds:sqlserver://us1-rds-sql-001.cb6hlnirjjxn.us-east-1.rds.amazonaws.com:1433/dataimports
+dbJdbcUrl.sa-east-1=jdbc:jtds:sqlserver://us1-rds-sql-001.cb6hlnirjjxn.us-east-1.rds.amazonaws.com:1433/dataimports
+ 
+dbCommandUrl.us-west-2=http://10.128.1.78:9090/sparksql/
+dbCommandUrl.us-east-1=http://<corresponding Spark Master IP in the same region>:9090/sparksql/
+dbCommandUrl.eu-west-1=http://<corresponding Spark Master IP in the same region>:9090/sparksql/
+dbCommandUrl.eu-central-1=http://<corresponding Spark Master IP in the same region>:9090/sparksql/
+dbCommandUrl.ap-southeast-1=http://<corresponding Spark Master IP in the same region>:9090/sparksql/
+dbCommandUrl.ap-northeast-1=http://<corresponding Spark Master IP in the same region>:9090/sparksql/
+dbCommandUrl.sa-east-1=http://<corresponding Spark Master IP in the same region>:9090/sparksql/
+
+# may include expected results of self-test as well
+selfTestIpv4=66.87.131.19
+selfTestIpv6=2001:0001:0000:0000:0000:0000:0000:0000
+
+sqlGetLocationInfo=select location_id locationId, country, region, city, latitude, longitude, metro_code metroCode from cities_201509151532 (nolock) where removed = 0 order by locationId
+sqlGetIspInfo=select isp_id ispId, provider_name providerName from isps_201509151532 (nolock) where removed = 0 order by ispId
+
+# used by Spark Web Only
+sparkPort=8080
+minthreads=500
+maxthreads=2000
+idleTimeoutMillis=-1
+
