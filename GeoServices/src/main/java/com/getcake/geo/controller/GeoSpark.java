@@ -131,7 +131,7 @@ public class GeoSpark {
                 return "test ok";
             });
 
-            get("/geoservices/status", (request, response) -> {
+            get("/geoservices/health", (request, response) -> {
                 try {
 					return geoController.getStatus();
             	} catch (IpNotFoundException exc) {
@@ -191,7 +191,7 @@ public class GeoSpark {
     		
             get("/geoservices/geo", (request, response) -> {  
             	try {
-                    return geoController.getGeoInfo(request.queryParams("ipaddress"));            		
+                    return geoController.getMultiGeoInfo(request.queryParams("ipaddresses"));            		
             	} catch (IpNotFoundException exc) {
             		response.status(HttpServletResponse.SC_NOT_FOUND);
             		return exc.getLocalizedMessage();            		
@@ -199,6 +199,7 @@ public class GeoSpark {
             		response.status(HttpServletResponse.SC_BAD_REQUEST);
             		return exc.getLocalizedMessage();            		
             	} catch (Throwable exc) {
+            		logger.error(exc);
             		response.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             		return exc.getLocalizedMessage();
             	}

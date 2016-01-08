@@ -17,7 +17,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.getcake.dao.BaseDao;
 import com.getcake.geo.model.*;
+import com.getcake.util.NullValueSerializer;
 
 public class HashCacheDao extends BaseDao {
 
@@ -73,10 +75,17 @@ public class HashCacheDao extends BaseDao {
 		String region;
 		
 		this.properties = properties;
+		dataSourceType = properties.getProperty("dataSourceType");
+		
         geoDataVersion = properties.getProperty("geoDataVersion");
         logger.debug("geoDataVersion: " + geoDataVersion);
-        locationTableName = MsSqlDao.IP_LOCATION_TABLE_NAME_VER_PREFIX + geoDataVersion;
-        ispTableName = MsSqlDao.IP_ISP_TABLE_NAME_PREFIX + geoDataVersion;
+        if ("sparkSql".equalsIgnoreCase(dataSourceType)) {
+            locationTableName = MsSqlDao.IP_LOCATION_TABLE_NAME_VER_PREFIX + geoDataVersion;
+            ispTableName = MsSqlDao.IP_ISP_TABLE_NAME_PREFIX + geoDataVersion;        	
+        } else {
+            locationTableName = MsSqlDao.IP_LOCATION_TABLE_NAME ;
+            ispTableName = MsSqlDao.IP_ISP_TABLE_NAME;        	        	
+        }
         
 		region = properties.getProperty("region");
 		if (region != null) {
@@ -86,7 +95,6 @@ public class HashCacheDao extends BaseDao {
 		}
 		logger.debug("dbJdbcUrl." + region + ": " + dbJdbcUrl);
 		dbDriver = properties.getProperty("dbDriver");
-		dataSourceType = properties.getProperty("dataSourceType");
 		// dbUrl = properties.getProperty("dbUrlPrefix") + properties.getProperty("dbServer") + properties.getProperty("dbUrlSuffix");
 		logger.debug("dataSourceType: " + dataSourceType);
 		sqlGetLocationInfo = properties.getProperty("sqlGetLocationInfo");
@@ -135,6 +143,12 @@ public class HashCacheDao extends BaseDao {
 		}
 
 		logger.debug("ISP ipv6 start loading ");
+		if ("msSql".equalsIgnoreCase(dataSourceType)) {
+			this.loadCacheIpv6AllDiffByte_Binary(ispTableName, ispIpv6Cache, flushCacheFlag, 1, numBytes, topNumRows);
+		} else {
+			this.loadCacheIpv6AllDiffByte_String(ispTableName, ispIpv6Cache, flushCacheFlag, 1, numBytes, topNumRows);			
+		}
+		
 		for (int startByteNum = 1; startByteNum < 16; startByteNum++) {
 			if ("msSql".equalsIgnoreCase(dataSourceType)) {
 				count = loadCacheIpv6FirstNByte_Binary(ispTableName,
@@ -182,6 +196,12 @@ public class HashCacheDao extends BaseDao {
 		}
 
 		logger.debug("Location ipv6 start loading ");
+		if ("msSql".equalsIgnoreCase(dataSourceType)) {
+			this.loadCacheIpv6AllDiffByte_Binary(locationTableName, locationIpv6Cache, flushCacheFlag, 1, numBytes, topNumRows);
+		} else {
+			this.loadCacheIpv6AllDiffByte_String(locationTableName, locationIpv6Cache, flushCacheFlag, 1, numBytes, topNumRows);			
+		}
+		
 		for (int startByteNum = 1; startByteNum < 16; startByteNum++) {
 			if ("msSql".equalsIgnoreCase(dataSourceType)) {
 				count = loadCacheIpv6FirstNByte_Binary(locationTableName,
@@ -241,6 +261,13 @@ public class HashCacheDao extends BaseDao {
 		}
 
 		int accCount = 0;
+
+		if ("msSql".equalsIgnoreCase(dataSourceType)) {
+			this.loadCacheIpv4AllDiffByte_Binary(ispTableName, ispIpv4Cache, flushCacheFlag, 1, numBytes, topNumRows);
+		} else {
+			this.loadCacheIpv4AllDiffByte_String(ispTableName, ispIpv4Cache, flushCacheFlag, 1, numBytes, topNumRows);			
+		}
+		
 		for (int startByteNum = 1; startByteNum < numBytes; startByteNum++) {
 			if ("msSql".equalsIgnoreCase(dataSourceType)) {
 				accCount += loadCacheIpv4FirstNByte_Binary(ispTableName,
@@ -304,6 +331,12 @@ public class HashCacheDao extends BaseDao {
 		}
 
 		int accCount = 0;
+		if ("msSql".equalsIgnoreCase(dataSourceType)) {
+			this.loadCacheIpv4AllDiffByte_Binary(locationTableName, locationIpv4Cache, flushCacheFlag, 1, numBytes, topNumRows);
+		} else {
+			this.loadCacheIpv4AllDiffByte_String(locationTableName, locationIpv4Cache, flushCacheFlag, 1, numBytes, topNumRows);			
+		}
+		
 		for (int startByteNum = 1; startByteNum < numBytes; startByteNum++) {
 			if ("msSql".equalsIgnoreCase(dataSourceType)) {
 				accCount += loadCacheIpv4FirstNByte_Binary(locationTableName,
@@ -365,7 +398,7 @@ public class HashCacheDao extends BaseDao {
 		try {
 			logger.debug("");
 			System.out.println("");
-			logMsg = "=== start processing Ipv4-bytes:1-" + startByteNum;
+			logMsg = "=== loadCacheIpv4FirstNByte_String table: " + tableName + " start processing Ipv4-bytes:1-" + startByteNum;
 			logger.debug(logMsg);
 			System.out.println(logMsg);
 
@@ -568,7 +601,7 @@ public class HashCacheDao extends BaseDao {
 		try {
 			logger.debug("");
 			System.out.println("");
-			logMsg = "=== start processing Ipv4-bytes:1-" + startByteNum;
+			logMsg = "=== loadCacheIpv4FirstNByte_String table: " + tableName + " start processing Ipv4-bytes:1-" + startByteNum;
 			logger.debug(logMsg);
 			System.out.println(logMsg);
 
@@ -750,6 +783,527 @@ public class HashCacheDao extends BaseDao {
 		return count;
 	}
 
+	public int loadCacheIpv4AllDiffByte_String(String tableName,
+			Ipv4Cache ipCache, boolean flushCacheFlag, int startByteNum,
+			int numBytes, long topNumRows) throws Throwable {
+		long startTime, endTime;
+		PreparedStatement sourceStmt = null;
+		Connection sourceConn = null;
+		ResultSet sourceRs = null;
+		int count = 0, targetId = -1, origStartByteNum = -1;
+		String bytePrefixStr = null, byteStartStr = null, byteEndStr = null, sql, logMsg;
+		long bytestartNum, byteEndNum;
+		List<Long> startList = null, endList = null;
+		List<Integer> locationIdList = null;
+		Ipv4RangeNode nodeLists = null;
+
+		try {
+			logger.debug("");
+			System.out.println("");
+			logMsg = "=== loadCacheIpv4AllDiffByte_String table: " + tableName + " start processing Ipv4-bytes:1-4";
+			logger.debug(logMsg);
+			System.out.println(logMsg);
+
+			nodeLists = new Ipv4RangeNode();
+			ipCache.allBytesDiffCache = nodeLists;
+			startList = new ArrayList<Long>();
+			endList = new ArrayList<Long>();
+			locationIdList = new ArrayList<Integer>();
+
+			startTime = Calendar.getInstance().getTimeInMillis();
+			sourceConn = getConnection();
+
+			// for string adjust for 2 characters per byte
+			origStartByteNum = startByteNum;
+			startByteNum *= 2;
+			numBytes *= 2;
+
+			sql = "SELECT * FROM " + tableName + " "
+					+ " WHERE length (ipv6_end) <= " + numBytes + " "
+					// + "and SUBSTRING(ipv6_start, 1, " + endMidByteNum
+					// + ") != SUBSTRING(ipv6_end, 1, " + endMidByteNum + ")  "
+					+  "and SUBSTRING(ipv6_start, 1, " + startByteNum
+					+ ") != SUBSTRING(ipv6_end, 1, " + startByteNum + ") ";
+			if (topNumRows > 0) {
+				sql += " LIMIT " + topNumRows;
+			}
+			sql += " order by ipv6_start";
+
+			sourceStmt = sourceConn.prepareStatement(sql);
+			logger.debug(sql);
+			System.out.println(sql);
+
+			sourceRs = sourceStmt.executeQuery();
+			endTime = Calendar.getInstance().getTimeInMillis();
+			logger.debug("Ipv4-bytes:1-" + origStartByteNum
+					+ " sql execution (ms): " + (endTime - startTime));
+
+			startTime = Calendar.getInstance().getTimeInMillis();
+			while (sourceRs.next()) {
+				byteStartStr = sourceRs.getString("ipv6_start");
+				byteEndStr = sourceRs.getString("ipv6_end");
+				targetId = sourceRs.getInt("targetId");
+
+				count++;
+				ipCache.numNodes++;
+				if ((count % LOAD_LOG_INTERVAL) == 1) {
+					endTime = Calendar.getInstance().getTimeInMillis();
+					logger.debug("Running check Ipv4-bytes:1-"
+							+ origStartByteNum + " - dur(ms):"
+							+ (endTime - startTime) + " - totalNodes:"
+							+ ipCache.numNodes + " - rows:" + count
+							+ " - locationid:" + targetId
+							+ " - byteStartStr: " + byteStartStr
+							+ " - byteEndStr: " + byteEndStr
+							+ " - ipv6_start: " + sourceRs.getString("ipv6_start")
+							+ " - ipv6_end: " + sourceRs.getString("ipv6_end"));
+				}
+
+				bytestartNum = Long.parseLong(byteStartStr, 16);
+				byteEndNum = Long.parseLong(byteEndStr, 16);
+
+				startList.add(bytestartNum);
+				endList.add(byteEndNum); 
+				locationIdList.add(targetId);
+			}
+			
+			if (count > 0) {
+				if (nodeLists != null) {
+					nodeLists.setStartArray(startList.stream()
+							.mapToLong(i -> i).toArray());
+					nodeLists.setEndArray(endList.stream().mapToLong(i -> i)
+							.toArray());
+					nodeLists.setLocationIdArray(locationIdList.stream()
+							.mapToInt(i -> i).toArray());
+				}
+
+				if (startList.size() > ipCache.maxNodeLength) {
+					ipCache.maxNodeLength = startList.size();
+					ipCache.maxNodeIpStart = "startList.size() > ipCache.maxNodeLength";
+					ipCache.maxNodeIpEnd = "startList.size() > ipCache.maxNodeLength";
+				}
+				if (startList.size() < ipCache.minNodeLength) {
+					ipCache.minNodeLength = startList.size();
+					ipCache.maxNodeIpStart = "startList.size() < ipCache.minNodeLength";
+					ipCache.maxNodeIpEnd = "startList.size() < ipCache.minNodeLength";
+				}
+			}
+			endTime = Calendar.getInstance().getTimeInMillis();
+
+			logMsg = "=== ended processing Ipv4-byte:1-" + origStartByteNum
+					+ " - dur(ms):" + (endTime - startTime)
+					+ " - # rows loaded:" + count
+					+ " - accummulated totalNodes:" + ipCache.numNodes
+					+ " - maxNodeLength:" + ipCache.maxNodeLength
+					+ " - minNodeLength:" + ipCache.minNodeLength
+					+ " - maxNodeIpStart: " + ipCache.maxNodeIpStart
+					+ " - maxNodeIpEnd: " + ipCache.maxNodeIpEnd
+					+ " - minNodeIpStart: " + ipCache.minNodeIpStart
+					+ " - minNodeIpEnd: " + ipCache.minNodeIpEnd;
+			logger.debug(logMsg);
+			System.out.println(logMsg);
+		} catch (Throwable exc) {
+			logger.error("", exc);
+			logger.error("Error Ipv4-bytes:1-"
+					+ origStartByteNum + " - dur(ms):"
+					+ ipCache.numNodes + " - rows:" + count
+					+ " - locationid:" + targetId
+					+ " - bytePrefixStr: " + bytePrefixStr
+					+ " - byteStartStr: " + byteStartStr
+					+ " - byteEndStr: " + byteEndStr
+					+ " - ipv6_start: " + sourceRs.getString("ipv6_start")
+					+ " - ipv6_end: " + sourceRs.getString("ipv6_end"));
+			throw exc;
+		} finally {
+			this.closeDBResources(sourceConn, sourceStmt, sourceRs);
+		}
+		return count;
+	}
+	
+	public int loadCacheIpv4AllDiffByte_Binary(String tableName,
+			Ipv4Cache ipCache, boolean flushCacheFlag, int startByteNum,
+			int numBytes, long topNumRows) throws Throwable {
+		long startTime, endTime;
+		PreparedStatement sourceStmt = null;
+		Connection sourceConn = null;
+		ResultSet sourceRs = null;
+		int count = 0, targetId = -1;
+		String bytePrefixStr = null, byteStartStr = null, byteEndStr = null, sql, sqlPrefix, logMsg;
+		long bytestartNum, byteEndNum;
+		List<Long> startList = null, endList = null;
+		List<Integer> locationIdList = null;
+		Ipv4RangeNode nodeLists = null;
+
+		try {
+			logger.debug("");
+			System.out.println("");
+			logMsg = "=== loadCacheIpv4AllDiffByte_Binary table: " + tableName + " start processing Ipv4-bytes:1-" + startByteNum;
+			logger.debug(logMsg);
+			System.out.println(logMsg);
+
+			nodeLists = new Ipv4RangeNode();
+			ipCache.allBytesDiffCache = nodeLists;			
+			startList = new ArrayList<Long>();
+			endList = new ArrayList<Long>();
+			locationIdList = new ArrayList<Integer>();
+
+			startTime = Calendar.getInstance().getTimeInMillis();
+			sourceConn = getConnection();
+			if (topNumRows > 0) {
+				sqlPrefix = "SELECT TOP " + topNumRows;
+			} else {
+				sqlPrefix = "SELECT ";
+			}
+
+			sql = sqlPrefix + " * FROM " + tableName
+					+ " t  (nolock) " + "WHERE len(t.ipv6_end) <= " + numBytes
+					// + " " + "and SUBSTRING(t.ipv6_start, 1, " + midByteNum
+					// + ") != SUBSTRING(t.ipv6_end, 1, " + midByteNum + ")  "
+					+ " and SUBSTRING(t.ipv6_start, 1, " + startByteNum
+					+ ") != SUBSTRING(t.ipv6_end, 1, " + startByteNum + ")  "
+					+ " order by ipv6_start";
+			sourceStmt = sourceConn.prepareStatement(sql);
+			logger.debug(sql);
+			System.out.println(sql);
+
+			sourceRs = sourceStmt.executeQuery();
+			endTime = Calendar.getInstance().getTimeInMillis();
+			logger.debug("Ipv4-bytes:1-" + startByteNum
+					+ " sql execution (ms): " + (endTime - startTime));
+			startTime = Calendar.getInstance().getTimeInMillis();
+			while (sourceRs.next()) {
+				byteStartStr = sourceRs.getString("ipv6_start");
+				byteEndStr = sourceRs.getString("ipv6_end");
+				if (locationTableName.equalsIgnoreCase(tableName)) {
+					targetId = sourceRs.getInt("location_id");
+				} else {
+					targetId = sourceRs.getInt("isp_id");
+				}
+
+				count++;
+				ipCache.numNodes++;
+				if ((count % LOAD_LOG_INTERVAL) == 1) {
+					endTime = Calendar.getInstance().getTimeInMillis();
+					logger.debug("Running check Ipv4-bytes:1-" + startByteNum
+							+ " - dur(ms):" + (endTime - startTime)
+							+ " - totalNodes:" + ipCache.numNodes + " - rows:"
+							+ count + " - targetId:" + targetId
+							+ " - byteStartStr: " + byteStartStr
+							+ " - byteEndStr: " + byteEndStr
+							+ " - ipv6_start: "
+							+ sourceRs.getString("ipv6_start")
+							+ " - ipv6_end: " + sourceRs.getString("ipv6_end"));
+				}
+
+				bytestartNum = Long.parseLong(byteStartStr, 16);
+				byteEndNum = Long.parseLong(byteEndStr, 16);
+
+				startList.add(bytestartNum);
+				endList.add(byteEndNum);
+				locationIdList.add(targetId);
+			}
+			if (count > 0) {
+				if (nodeLists != null) {
+					nodeLists.setStartArray(startList.stream()
+							.mapToLong(i -> i).toArray());
+					nodeLists.setEndArray(endList.stream().mapToLong(i -> i)
+							.toArray());
+					nodeLists.setLocationIdArray(locationIdList.stream()
+							.mapToInt(i -> i).toArray());
+				}
+
+				if (startList.size() > ipCache.maxNodeLength) {
+					ipCache.maxNodeLength = startList.size();
+					ipCache.maxNodeIpStart = "startList.size() > ipCache.maxNodeLength";
+					ipCache.maxNodeIpEnd = "startList.size() > ipCache.maxNodeLength";
+				}
+				if (startList.size() < ipCache.minNodeLength) {
+					ipCache.minNodeLength = startList.size();
+					ipCache.maxNodeIpStart = "startList.size() < ipCache.minNodeLength";
+					ipCache.maxNodeIpEnd = "startList.size() < ipCache.minNodeLength";
+				}
+			}
+			endTime = Calendar.getInstance().getTimeInMillis();
+			logMsg = "=== ended processing Ipv4-byte:1-" + startByteNum
+					+ " - dur(ms):" + (endTime - startTime)
+					+ " - # rows loaded:" + count
+					+ " - accummulated totalNodes:" + ipCache.numNodes
+					+ " - maxNodeLength:" + ipCache.maxNodeLength
+					+ " - minNodeLength:" + ipCache.minNodeLength
+					+ " - maxNodeIpStart: " + ipCache.maxNodeIpStart
+					+ " - maxNodeIpEnd: " + ipCache.maxNodeIpEnd
+					+ " - minNodeIpStart: " + ipCache.minNodeIpStart
+					+ " - minNodeIpEnd: " + ipCache.minNodeIpEnd;
+			logger.debug(logMsg);
+			System.out.println(logMsg);
+		} catch (Throwable exc) {
+			logger.error("", exc);
+			logger.error("Error Ipv4-bytes:1-" + startByteNum
+					+ " - totalNodes:" + ipCache.numNodes + " - rows:"
+					+ count + " - targetId:" + targetId
+					+ " - bytePrefixStr: " + bytePrefixStr
+					+ " - byteStartStr: " + byteStartStr
+					+ " - byteEndStr: " + byteEndStr
+					+ " - ipv6_start: "
+					+ sourceRs.getString("ipv6_start")
+					+ " - ipv6_end: " + sourceRs.getString("ipv6_end"));
+			throw exc;
+		} finally {
+			this.closeDBResources(sourceConn, sourceStmt, sourceRs);
+		}
+		return count;
+	}
+	
+	public int loadCacheIpv6AllDiffByte_Binary(String tableName, Ipv6Cache ipCache, boolean flushCacheFlag, int startByteNum,
+			int numBytes, long topNumRows) {
+		long startTime, endTime;
+		PreparedStatement sourceStmt = null;
+		Connection sourceConn = null;
+		ResultSet sourceRs = null;
+		int count = 0, targetId = -1;
+		String byteStartStr = null, byteEndStr = null, sql, sqlPrefix, logMsg;
+		BigInteger bytestartNum, byteEndNum;
+		List<BigInteger> startList = null, endList = null;
+		List<Integer> locationIdList = null;
+		Ipv6RangeNode nodeLists = null;
+
+		try {
+			logger.debug("");
+			System.out.println("");
+			logMsg = "=== loadCacheIpv6AllDiffByte_Binary table: " + tableName + " start processing Ipv6-bytes:1-" + startByteNum;
+			logger.debug(logMsg);
+			System.out.println(logMsg);
+
+			nodeLists = new Ipv6RangeNode();
+			ipCache.allBytesDiffCache = nodeLists;			
+			startList = new ArrayList<BigInteger>();
+			endList = new ArrayList<BigInteger>();
+			locationIdList = new ArrayList<Integer>();
+
+			startTime = Calendar.getInstance().getTimeInMillis();
+			sourceConn = getConnection();
+			if (topNumRows > 0) {
+				sqlPrefix = "SELECT TOP " + topNumRows;
+			} else {
+				sqlPrefix = "SELECT ";
+			}
+			sql = sqlPrefix + " * FROM " + tableName
+					+ " t (nolock) " + "WHERE len(t.ipv6_end) > " + 4 + " "
+					// + "and SUBSTRING(t.ipv6_start, 1, " + midByteNum
+					// + ") != SUBSTRING(t.ipv6_end, 1, " + midByteNum + ")  "
+					+ " and SUBSTRING(t.ipv6_start, 1, " + startByteNum
+					+ " ) != SUBSTRING(t.ipv6_end, 1, " + startByteNum + ")  "
+					+ " order by ipv6_start;";
+			sourceStmt = sourceConn.prepareStatement(sql);
+			logger.debug(sql);
+			System.out.println(sql);
+
+			sourceRs = sourceStmt.executeQuery();
+			endTime = Calendar.getInstance().getTimeInMillis();
+			logger.debug("Ipv6-bytes:1-" + startByteNum
+					+ " sql execution (ms): " + (endTime - startTime));
+			startTime = Calendar.getInstance().getTimeInMillis();
+			while (sourceRs.next()) {
+				byteStartStr = sourceRs.getString("ipv6_start");
+				byteEndStr = sourceRs.getString("ipv6_end");
+				if (locationTableName.equalsIgnoreCase(tableName)) {
+					targetId = sourceRs.getInt("location_id");
+				} else {
+					targetId = sourceRs.getInt("isp_id");
+				}
+
+				count++;
+				ipCache.numNodes++;
+				if ((count % LOAD_LOG_INTERVAL) == 1) {
+					endTime = Calendar.getInstance().getTimeInMillis();
+					logger.debug("Running check Ipv6-bytes:1-" + startByteNum
+							+ " - dur(ms):" + (endTime - startTime)
+							+ " - totalNodes:" + ipCache.numNodes + " - rows:"
+							+ count + " - targetId:" + targetId
+							+ " - byteStartStr: " + byteStartStr
+							+ " - byteEndStr: " + byteEndStr);
+				}
+
+				bytestartNum = new BigInteger(byteStartStr, 16);
+				byteEndNum = new BigInteger(byteEndStr, 16);
+
+				startList.add(bytestartNum);
+				endList.add(byteEndNum);
+				locationIdList.add(targetId);
+			}
+			if (count > 0) {
+				if (nodeLists != null) {
+					nodeLists.setStartArray(convertToArray(startList));
+					nodeLists.setEndArray(convertToArray(endList));
+					nodeLists.setLocationIdArray(locationIdList.stream()
+							.mapToInt(i -> i).toArray());
+				}
+
+				if (startList.size() > ipCache.maxNodeLength) {
+					ipCache.maxNodeLength = startList.size();
+					ipCache.maxNodeIpStart = "startList.size() > ipCache.maxNodeLength";
+					ipCache.maxNodeIpEnd = "startList.size() > ipCache.maxNodeLength";
+				}
+				if (startList.size() < ipCache.minNodeLength) {
+					ipCache.minNodeLength = startList.size();
+					ipCache.maxNodeIpStart = "startList.size() < ipCache.minNodeLength";
+					ipCache.maxNodeIpEnd = "startList.size() < ipCache.minNodeLength";
+				}
+			}
+			endTime = Calendar.getInstance().getTimeInMillis();
+			logMsg = "=== end processing Ipv6-bytes:1-" + startByteNum
+					+ " - dur(ms):" + (endTime - startTime)
+					+ " - # rows loaded:" + count
+					+ " - accummulated totalNodes:" + ipCache.numNodes
+					+ " - maxNodeLength:" + ipCache.maxNodeLength
+					+ " - minNodeLength:" + ipCache.minNodeLength
+					+ " - maxNodeIpStart: " + ipCache.maxNodeIpStart
+					+ " - maxNodeIpEnd: " + ipCache.maxNodeIpEnd
+					+ " - minNodeIpStart: " + ipCache.minNodeIpStart
+					+ " - minNodeIpEnd: " + ipCache.minNodeIpEnd;
+			logger.debug(logMsg);
+			System.out.println(logMsg);
+		} catch (Throwable exc) {
+			logger.error("", exc);
+			logger.debug("Running check Ipv6-bytes:1-" + startByteNum
+					+ " - totalNodes:" + ipCache.numNodes + " - rows:"
+					+ count + " - targetId:" + targetId
+					+ " - byteStartStr: " + byteStartStr
+					+ " - byteEndStr: " + byteEndStr);
+			throw new RuntimeException (exc);
+		} finally {
+			this.closeDBResources(sourceConn, sourceStmt, sourceRs);
+		}
+		return count;
+	}
+	
+	public int loadCacheIpv6AllDiffByte_String (String tableName, Ipv6Cache ipCache, boolean flushCacheFlag, int startByteNum,
+		int numBytes, long topNumRows)  {
+		long startTime, endTime;
+		PreparedStatement sourceStmt = null;
+		Connection sourceConn = null;
+		ResultSet sourceRs = null;
+		int count = 0, targetId = -1, origStartByteNum = -1;
+		String byteStartStr = null, byteEndStr = null, sql, logMsg;
+		BigInteger bytestartNum, byteEndNum;
+		List<BigInteger> startList = null, endList = null;
+		List<Integer> locationIdList = null;
+		Ipv6RangeNode nodeLists = null;
+
+		try {
+			logger.debug("");
+			System.out.println("");
+			logMsg = "=== start processing Ipv6-bytes:1-" + startByteNum;
+			logger.debug(logMsg);
+			System.out.println(logMsg);
+
+			nodeLists = new Ipv6RangeNode();
+			ipCache.allBytesDiffCache = nodeLists;			
+			startList = new ArrayList<BigInteger>();
+			endList = new ArrayList<BigInteger>();
+			locationIdList = new ArrayList<Integer>();
+
+			startTime = Calendar.getInstance().getTimeInMillis();
+			sourceConn = getConnection();
+
+			// for string adjust for 2 characters per byte
+			origStartByteNum = startByteNum;
+			startByteNum *= 2;
+			numBytes *= 2;
+
+			sql = "SELECT * FROM " + tableName + " "
+					+ "WHERE length (ipv6_end) > " + 8 + " "
+					// + "and SUBSTRING(ipv6_start, 1, " + endMidByteNum
+					// + ") != SUBSTRING(ipv6_end, 1, " + endMidByteNum + ")  "
+					+ " and SUBSTRING(ipv6_start, 1, " + startByteNum
+					+ " ) != SUBSTRING(ipv6_end, 1, " + startByteNum + ")  ";
+			if (topNumRows > 0) {
+				sql += " LIMIT " + topNumRows;
+			}
+			sql += " order by ipv6_start";
+
+			sourceStmt = sourceConn.prepareStatement(sql);
+			logger.debug(sql);
+			System.out.println(sql);
+
+			sourceRs = sourceStmt.executeQuery();
+			endTime = Calendar.getInstance().getTimeInMillis();
+			logger.debug("Ipv6-bytes:1-" + origStartByteNum
+					+ " sql execution (ms): " + (endTime - startTime));
+			startTime = Calendar.getInstance().getTimeInMillis();
+			while (sourceRs.next()) {
+				byteStartStr = sourceRs.getString("ipv6_start");
+				byteEndStr = sourceRs.getString("ipv6_end");
+				targetId = sourceRs.getInt("targetId");
+
+				count++;
+				ipCache.numNodes++;
+				if ((count % LOAD_LOG_INTERVAL) == 1) {
+					endTime = Calendar.getInstance().getTimeInMillis();
+					logger.debug("Running check Ipv6-bytes:1-"
+							+ origStartByteNum + " - dur(ms):"
+							+ (endTime - startTime) + " - totalNodes:"
+							+ ipCache.numNodes + " - rows:" + count
+							+ " - locationId:" + targetId
+							+ " - byteStartStr: " + byteStartStr
+							+ " - byteEndStr: " + byteEndStr);
+				}
+
+				bytestartNum = new BigInteger(byteStartStr, 16);
+				byteEndNum = new BigInteger(byteEndStr, 16);
+
+				startList.add(bytestartNum);
+				endList.add(byteEndNum);
+				locationIdList.add(targetId);
+			}
+			if (count > 0) {
+				if (nodeLists != null) {
+					nodeLists.setStartArray(convertToArray(startList));
+					nodeLists.setEndArray(convertToArray(endList));
+					nodeLists.setLocationIdArray(locationIdList.stream()
+							.mapToInt(i -> i).toArray());
+				}
+
+				if (startList.size() > ipCache.maxNodeLength) {
+					ipCache.maxNodeLength = startList.size();
+					ipCache.maxNodeIpStart = "startList.size() > ipCache.maxNodeLength";
+					ipCache.maxNodeIpEnd = "startList.size() > ipCache.maxNodeLength";
+				}
+				if (startList.size() < ipCache.minNodeLength) {
+					ipCache.minNodeLength = startList.size();
+					ipCache.maxNodeIpStart = "startList.size() < ipCache.minNodeLength";
+					ipCache.maxNodeIpEnd = "startList.size() < ipCache.minNodeLength";
+				}
+			}
+			endTime = Calendar.getInstance().getTimeInMillis();
+
+			logMsg = "=== end processing Ipv6-bytes:1-" + origStartByteNum
+					+ " - dur(ms):" + (endTime - startTime)
+					+ " - # rows loaded:" + count
+					+ " - accummulated totalNodes:" + ipCache.numNodes
+					+ " - maxNodeLength:" + ipCache.maxNodeLength
+					+ " - minNodeLength:" + ipCache.minNodeLength
+					+ " - maxNodeIpStart: " + ipCache.maxNodeIpStart
+					+ " - maxNodeIpEnd: " + ipCache.maxNodeIpEnd
+					+ " - minNodeIpStart: " + ipCache.minNodeIpStart
+					+ " - minNodeIpEnd: " + ipCache.minNodeIpEnd;
+			logger.debug(logMsg);
+			System.out.println(logMsg);
+		} catch (Throwable exc) {
+			logger.error("", exc);
+			logger.error("Error Ipv6-bytes:1-"
+					+ origStartByteNum + " - dur(ms):"
+					+ ipCache.numNodes + " - rows:" + count
+					+ " - locationId:" + targetId
+					+ " - byteStartStr: " + byteStartStr
+					+ " - byteEndStr: " + byteEndStr);
+			throw new RuntimeException (exc);
+		} finally {
+			this.closeDBResources(sourceConn, sourceStmt, sourceRs);
+		}
+		return count;
+	}
+	
 	public int loadCacheIpv6FirstNByte_String(String tableName,
 			Ipv6Cache ipCache, boolean flushCacheFlag, int startByteNum,
 			int numBytes, long topNumRows)  {
@@ -1340,7 +1894,7 @@ public class HashCacheDao extends BaseDao {
 		try {
 			logger.debug("");
 			System.out.println("");
-			logMsg = "=== start processing Ipv4-bytes:1-4";
+			logMsg = "=== loadCacheIpv4FirstFourBytes_String table: " + tableName + " start processing Ipv4-bytes:1-4";
 			logger.debug(logMsg);
 			System.out.println(logMsg);
 
@@ -1406,7 +1960,7 @@ public class HashCacheDao extends BaseDao {
 		}
 		return count;
 	}
-
+	
 	public int loadCacheIpv4FirstFourBytes_Binary(String tableName,
 			Ipv4Cache ipCache, boolean flushCacheFlag, long topNumRows) {
 		long startTime, endTime;
@@ -1421,7 +1975,7 @@ public class HashCacheDao extends BaseDao {
 		try {
 			logger.debug("");
 			System.out.println("");
-			logMsg = "=== start processing Ipv4-bytes:1-4";
+			logMsg = "=== loadCacheIpv4FirstFourBytes_Binary table: " + tableName + " start processing Ipv4-bytes:1-4";
 			logger.debug(logMsg);
 			System.out.println(logMsg);
 
@@ -1521,7 +2075,7 @@ public class HashCacheDao extends BaseDao {
 	}
 
 	public int getIdFromIpv4Cache(Ipv4Cache ipv4Cache, String ipAddress) {
-		int locationId = 0;
+		int targetId = 0;
 		String bytePrefixStr, byteStr;
 		long bytePrefixNum, byteNum;
 		int endIndex, ipLength;
@@ -1542,9 +2096,8 @@ public class HashCacheDao extends BaseDao {
 				byteNum = Long.parseLong(byteStr, 16); // 10448351135499550720
 				nodeLists = ipv4Cache.subBytesCache.get(bytePrefixNum);
 				if (null != nodeLists) {
-					locationId = getLocationIdBinarySearchIpv4(ipAddress,
-							byteNum, nodeLists);
-					if (locationId > 0) {
+					targetId = getLocationIdBinarySearchIpv4(ipAddress, byteNum, nodeLists);
+					if (targetId > 0) {
 						break;
 					}
 				}
@@ -1553,7 +2106,13 @@ public class HashCacheDao extends BaseDao {
 					break;
 				}
 			}
-			return locationId;
+			
+			if (targetId == 0 && ipv4Cache.allBytesDiffCache != null) {
+				byteNum = Long.parseLong(ipAddress, 16);
+				targetId = getLocationIdBinarySearchIpv4(ipAddress, byteNum, ipv4Cache.allBytesDiffCache);
+				
+			}
+			return targetId;
 		} catch (Throwable exc) {
 			logger.error("getLocationId err for ipAddress:" + ipAddress, exc);
 			throw exc;
@@ -1601,7 +2160,7 @@ public class HashCacheDao extends BaseDao {
 	}
 
 	public int getIdFromIpv6Cache(Ipv6Cache ipv6Cache, String ipAddress) {
-		int locationId = 0;
+		int targetId = 0;
 		String bytePrefixStr, byteStr;
 		BigInteger bytePrefixNum, byteNum;
 		int endIndex, ipLength;
@@ -1617,9 +2176,8 @@ public class HashCacheDao extends BaseDao {
 				byteNum = new BigInteger(byteStr, 16); // 10448351135499550720
 				nodeLists = ipv6Cache.subBytesCache.get(bytePrefixNum);
 				if (null != nodeLists) {
-					locationId = getLocationIdBinarySearchIpV6(ipAddress,
-							byteNum, nodeLists);
-					if (locationId > 0) {
+					targetId = getLocationIdBinarySearchIpV6(ipAddress, byteNum, nodeLists);
+					if (targetId > 0) {
 						break;
 					}
 				}
@@ -1628,7 +2186,13 @@ public class HashCacheDao extends BaseDao {
 					break;
 				}
 			}
-			return locationId;
+			
+			if (targetId == 0 && ipv6Cache.allBytesDiffCache != null) {
+				byteNum = new BigInteger(ipAddress, 16); 
+				targetId = getLocationIdBinarySearchIpV6(ipAddress, byteNum, ipv6Cache.allBytesDiffCache);				
+			}
+			
+			return targetId;
 		} catch (Throwable exc) {
 			logger.error("getLocationId err for ipAddress:" + ipAddress, exc);
 			throw exc;

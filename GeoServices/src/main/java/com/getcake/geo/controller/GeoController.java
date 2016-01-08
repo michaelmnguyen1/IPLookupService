@@ -17,6 +17,7 @@ import com.getcake.geo.service.GeoService;
 import com.getcake.geo.service.IpInvalidException;
 import com.getcake.geo.service.IpNotFoundException;
 import com.getcake.util.AwsUtil;
+import com.getcake.util.NullValueSerializer;
 
 public class GeoController {
 	
@@ -82,7 +83,7 @@ public class GeoController {
     	ipAddresses = ipAddressList.split(",");
     	
 		jsonMapper = new ObjectMapper();
-		jsonMapper.getSerializerProvider().setNullValueSerializer(new NullValueSerializer());
+		// jsonMapper.getSerializerProvider().setNullValueSerializer(new NullValueSerializer());
     	
     	geoInfoList = new StringBuilder ();
 		// geoInfoList.append("{ \"geo_info_list\" : ");
@@ -116,15 +117,14 @@ public class GeoController {
         	}
     	}
 		geoInfoList.append("]");    	
-    	logger.debug("geoInfoList: " + geoInfoList);
     	return geoInfoList.toString();    	    	
     }
     
     public String getGeoInfo(String origIpAddress) throws IpNotFoundException, IpInvalidException {
     	String geoInfo, ipAddress;
-    	long algStartTime, startTime, endTime, ipConvDur, algDur;
+    	long algorthmStartTime, allProcessingStartTime, endTime, ipFormatConvDur, algorthmDur;
     	
-		startTime = System.nanoTime();
+		allProcessingStartTime = System.nanoTime();
     	if (origIpAddress == null || origIpAddress.trim().length() == 0) {
     		logger.info("input IP is blank");
     		throw new IpInvalidException ("input IP is blank");
@@ -134,11 +134,11 @@ public class GeoController {
     	ipAddress = convertToString (origIpAddress);
     	// logger.debug("Output ipAddress: " + ipAddress);
     	
-		algStartTime = System.nanoTime();
-    	ipConvDur = algStartTime - startTime;
+		algorthmStartTime = System.nanoTime();
+    	ipFormatConvDur = algorthmStartTime - allProcessingStartTime;
     	geoInfo = geoService.getGeoInfo(ipAddress, origIpAddress);
     	endTime = System.nanoTime();
-    	algDur = endTime - algStartTime;
+    	algorthmDur = endTime - algorthmStartTime;
     	/* logger.debug("convertToString dur(microseconds): " + (convDur / 1000));
     	duration = endTime - startTime;
     	logger.debug("alg dur(microseconds): " + (algDur / 1000));
@@ -154,8 +154,8 @@ public class GeoController {
     	// do not use synchronized on purpose for increments of accDuration and count to avoid impact on performance
     	// for the statistics purposes, these calculations do not need to be exact. 
     	*/
-    	loadStatistics.ipConvDuration += ipConvDur;
-    	loadStatistics.accAlgDuration += algDur;    	    	
+    	loadStatistics.allIpFormatConvDurationNanoSec += ipFormatConvDur;
+    	loadStatistics.allAlgorthmDurationNanoSec += algorthmDur;    	    	
     	loadStatistics.count++;
     	return geoInfo;
     }
@@ -207,8 +207,8 @@ public class GeoController {
 	    
     // @RequestMapping(value = "statistics", method = RequestMethod.GET) throws Throwable
     public LoadStatistics getGeoInfoStatistics()  {
-    	loadStatistics.avgAlgDurationMicroSec = (loadStatistics.accAlgDuration / (double)loadStatistics.count) / 1000;
-    	loadStatistics.avgIpConvDurationMicroSec = (loadStatistics.ipConvDuration / (double)loadStatistics.count) / 1000;
+    	loadStatistics.avgAlgorthmDurationMicroSec = (loadStatistics.allAlgorthmDurationNanoSec / (double)loadStatistics.count) / 1000;
+    	loadStatistics.avgIpFormatConvDurationMicroSec = (loadStatistics.allIpFormatConvDurationNanoSec / (double)loadStatistics.count) / 1000;
     	
     	// ObjectMapper mapper = new ObjectMapper();
     	// return mapper.writeValueAsString (loadStatistics);
@@ -218,13 +218,13 @@ public class GeoController {
     // @RequestMapping(value = "statistics", method = RequestMethod.PUT)
     public LoadStatistics resetGeoInfoStatistics() {
     	loadStatistics.count = 0;
-    	loadStatistics.accAlgDuration = 0;
+    	loadStatistics.allAlgorthmDurationNanoSec = 0;
     	/*
     	loadStatistics.maxDuration = 0;
     	loadStatistics.minDuration = Long.MAX_VALUE;
     	*/
-    	loadStatistics.avgAlgDurationMicroSec = 0;
-    	loadStatistics.avgIpConvDurationMicroSec = 0;
+    	loadStatistics.avgAlgorthmDurationMicroSec = 0;
+    	loadStatistics.avgIpFormatConvDurationMicroSec = 0;
     	return loadStatistics;
     }    
     

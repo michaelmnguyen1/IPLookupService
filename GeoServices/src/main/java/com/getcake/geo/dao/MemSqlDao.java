@@ -13,6 +13,8 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.getcake.dao.BaseDao;
+
 public class MemSqlDao extends BaseDao {
 
 	public int findLocationId(BigInteger ipv4, String ipv6){

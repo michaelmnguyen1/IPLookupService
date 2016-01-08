@@ -24,6 +24,7 @@ import java.util.Properties;
 
 import javax.sql.DataSource;
 
+import com.getcake.dao.BaseDao;
 import com.getcake.geo.model.GeoInfo;
 import com.getcake.geo.model.IpData;
 

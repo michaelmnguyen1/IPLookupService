@@ -7,8 +7,12 @@ import java.util.Properties;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.getcake.geo.dao.*;
+import com.getcake.dao.*;
+import com.getcake.geo.dao.HashCacheDao;
+import com.getcake.geo.dao.MsSqlDao;
+import com.getcake.geo.dao.S3Dao;
 import com.getcake.geo.model.*;
+import com.getcake.util.NullValueSerializer;
 
 import org.apache.log4j.*;
 
@@ -63,7 +67,7 @@ public class GeoService {
 	
 	private static final long MILLISEC_PER_MINUTE = 1000 * 60;
 	public long loadHashCacheDao (boolean flushCacheFlag, long topNumRows) throws Throwable  {
-		long ipNodeCount, ispNodeCount;
+		long ipNodeCount = -1, ispNodeCount;
 		long startTime, ispStartTime, locationStartTime, endTime, durationMillisec;
 				
 		logger.debug("=================");
@@ -122,8 +126,6 @@ public class GeoService {
     	geoInfo.append("\"http_status_code\":");
     	geoInfo.append("\"200\"");
     	
-    	// geoInfo.append("\"geoISP\": ");
-    	
     	geoInfo.append(geoInfoMap.get(locationId));
     			
     	isp_id = hashCacheDao.getIspId(ipAddress);
@@ -133,7 +135,6 @@ public class GeoService {
         	geoInfo.append(ispInfoMap.get(isp_id));    		
     	}
     	
-    	// geoInfo.append("}");    	
     	return geoInfo.toString();    	
 	}
 
