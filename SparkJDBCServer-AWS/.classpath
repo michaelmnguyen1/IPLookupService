@@ -23,8 +23,8 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/Spark-1.4.1"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/GeoServices-Spark-New"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/spark-core-Web"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/Spark 1.6.0"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

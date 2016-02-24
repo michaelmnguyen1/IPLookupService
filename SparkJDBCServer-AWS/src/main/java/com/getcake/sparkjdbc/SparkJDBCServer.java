@@ -22,9 +22,21 @@ import static spark.Spark.post;
 import static spark.Spark.delete;
 import spark.Spark;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Date;
 import java.util.Properties;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.text.SimpleDateFormat;
 
 import javax.servlet.http.HttpServletResponse;
@@ -36,6 +48,7 @@ import org.apache.spark.sql.catalyst.analysis.NoSuchTableException;
 import org.apache.spark.sql.hive.HiveContext;
 import org.apache.spark.sql.hive.thriftserver.*; 
 import org.apache.spark.sql.types.DataType;
+import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
@@ -227,6 +240,50 @@ public class SparkJDBCServer {
             		return respMsg;
             	}            	
             });
+        		
+            // new 
+            post ("/sparksql/table", (request, response) -> {
+            	String tableName = null, fullPathTableName = null, respMsg, fileName, metaFileName, fileListName;
+            	Boolean tmpheaderInCSVFileFlag = headerInCSVFileFlag;
+            	
+            	try {            		
+                	tableName = request.queryParams("tablename");                        
+                	metaFileName = request.queryParams("metafilename");
+                	fileListName = request.queryParams("filelistname");                                        	
+                	
+                	fileName = request.queryParams("filename");                        
+                	/* headerInCSVFileStr = request.queryParams("headerincsvfile");
+                	if (headerInCSVFileStr != null) {
+                		headerInCSVFileFlag = Boolean.parseBoolean(headerInCSVFileStr);
+                	} */
+                	fullPathTableName = geoSourceFilePath +"/" + fileName;
+                	metaFileName = geoSourceFilePath +"/" + metaFileName;
+                	return loadFilesWithMeta(tableName, fullPathTableName, metaFileName, fileListName);
+            	} catch (Throwable exc) {
+            		response.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            		respMsg = "error loading table: " + fullPathTableName + " - err:" + exc.getLocalizedMessage();
+            		exc.printStackTrace();
+            		log ("/sparksql/loadtable", exc);
+            		return respMsg;
+            	} finally {
+            		// headerInCSVFileFlag = tmpheaderInCSVFileFlag;
+            	}
+            });
+        				
+            delete ("/sparksql/table", (request, response) -> {
+            	String tableName = null, fullPathTableName = "N/A", respMsg, fileName;
+            	
+            	try {            		
+                	tableName = request.queryParams("tablename");                        
+                	return unloadTable(tableName, fullPathTableName);
+            	} catch (Throwable exc) {
+            		response.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            		respMsg = "error loading table: " + fullPathTableName + " - err:" + exc.getLocalizedMessage();
+            		exc.printStackTrace();
+            		log ("/sparksql/loadtable", exc);
+            		return respMsg;
+            	}            	
+            });
         				
             post ("/sparksql/mssqldata", (request, response) -> {
             	StringBuilder respMsg;
@@ -343,6 +400,308 @@ public class SparkJDBCServer {
     	return respMsg.toString();
     }
     
+    private String loadSingleFileWithMeta (String registerTableName, String fullPathTableName, String metaFileName) throws IOException {
+    	DataFrame dynamicDataFrame;
+    	long startTime, firstStartTime;
+    	float durSeconds, durMinutes;
+    	String respMsg;
+
+    	startTime = System.currentTimeMillis();
+	    firstStartTime = startTime;
+	    try {
+		    dynamicDataFrame = hiveContext.table(registerTableName);	    	
+	    	respMsg = "table " + registerTableName + " at " + fullPathTableName + " was already loaded";
+	    	log (respMsg);
+	    	return respMsg;
+	    } catch (Throwable exc) { 
+	    	// hiveContext.table does not declare that it throws NoSuchTableException, so cannot use it in catch clause and
+	    	// have to check for it explicitly
+	    	if (exc instanceof NoSuchTableException) {
+		    	respMsg = "table " + registerTableName + " at " + fullPathTableName + " was not loaded => load it next";
+		    	log (respMsg);	    		
+	    	} else {
+	    		throw exc;
+	    	}
+	    }
+	    
+		FileInputStream propFileInputStream;
+	    propFileInputStream = new FileInputStream (metaFileName);
+	    properties = new Properties ();
+		properties.load(propFileInputStream);
+		
+		Stream<Entry<Object, Object>> stream = properties.entrySet().stream();
+		Map<String, String> options = stream.collect(Collectors.toMap(
+	            entry -> String.valueOf(entry.getKey()),
+	            entry -> String.valueOf(entry.getValue())));
+
+		int numColumns = Integer.parseInt(properties.getProperty("numColumns"));
+    	StructField structFields [] = new StructField [numColumns];
+		String colName, colType;
+    	StructField structField;
+		
+		for (int i = 1; i <= numColumns; i++) {
+			colName = properties.getProperty("col" + i + ".name");
+			colType = properties.getProperty("col" + i + ".type");
+			switch (colType) {
+			case "TimeStamp":
+				structField = DataTypes.createStructField(colName, DataTypes.TimestampType, true);
+				break;
+			
+			case "Date":
+				structField = DataTypes.createStructField(colName, DataTypes.DateType, true);
+				break;
+			
+			case "Float":
+				structField = DataTypes.createStructField(colName, DataTypes.FloatType, true);
+				break;
+			
+			case "Integer":
+				structField = DataTypes.createStructField(colName, DataTypes.IntegerType, true);
+				break;
+			
+			case "Long":
+				structField = DataTypes.createStructField(colName, DataTypes.LongType, true);
+				break;
+			
+			case "Short":
+				structField = DataTypes.createStructField(colName, DataTypes.ShortType, true);
+				break;
+			
+			case "Double":
+				structField = DataTypes.createStructField(colName, DataTypes.DoubleType, true);
+				break;
+			
+			case "Boolean":
+				structField = DataTypes.createStructField(colName, DataTypes.BooleanType, true);
+				break;
+			
+			case "Binary":
+				structField = DataTypes.createStructField(colName, DataTypes.BinaryType, true);
+				break;
+			
+			case "Byte":
+				structField = DataTypes.createStructField(colName, DataTypes.ByteType, true);
+				break;
+			
+			case "Null":
+				structField = DataTypes.createStructField(colName, DataTypes.NullType, true);
+				break;
+			
+			default:
+				structField = DataTypes.createStructField(colName, DataTypes.StringType, true);
+			}
+			
+			structFields[i - 1] = structField;
+		}
+		
+		
+    	 // dynamicDataFrame = hiveContext.read().format("com.databricks.spark.csv").
+    	//	option("header", Boolean.toString(headerInCSVFileFlag)).option("inferSchema", Boolean.toString(inferSchemaFlag)).load(fullPathTableName);
+    	// Map<String, String> options = new HashMap<>(properties);
+    	options.put("path", "file:///" + fullPathTableName);
+    	// options.put("header", "false");
+    	// options.put("delimiter", ",");
+    	
+    	// DataType dataType = new DataType ();
+    	/*
+    	StructField structField1 = DataTypes.createStructField("LogType", DataTypes.StringType, false);
+    	StructField structField2 = DataTypes.createStructField("EntryTime", DataTypes.TimestampType, false);
+    	StructField structField3 = DataTypes.createStructField("Code_Class", DataTypes.StringType, false);
+    	StructField structField4 = DataTypes.createStructField("Code_Method", DataTypes.StringType, false);
+    	StructField structField5 = DataTypes.createStructField("Log_Message", DataTypes.StringType, false);
+    	structFields[0] = structField1;
+    	structFields[1] = structField2;
+    	structFields[2] = structField3;
+    	structFields[3] = structField4;
+    	structFields[4] = structField5;
+    	*/
+    	
+    	StructType schema = new StructType(structFields);
+
+    	dynamicDataFrame = hiveContext.load("com.databricks.spark.csv", schema, options);
+    	
+    	durSeconds = (float)(System.currentTimeMillis() - startTime) / 1000F;
+    	durMinutes = durSeconds / 60F;
+    	log ("loaded table " + fullPathTableName + " in seconds: " + durSeconds + " / in minutes: " + durMinutes);
+    	
+    	schema = dynamicDataFrame.schema();
+    	structFields = schema.fields();
+    	for (StructField structFieldLocal : structFields) {
+	    	DataType dataType = structFieldLocal.dataType();
+    		logger.debug(structFieldLocal.name() + " - dataType: " + dataType.typeName());
+    	}
+    	
+	    startTime = System.currentTimeMillis();
+    	dynamicDataFrame.cache();		    	
+    	durSeconds = (float)(System.currentTimeMillis() - startTime) / 1000F;
+    	durMinutes = durSeconds / 60F;
+    	log ("cache table " + fullPathTableName + " in seconds: " + durSeconds + " / in minutes: " + durMinutes);
+
+	    startTime = System.currentTimeMillis();
+	    dynamicDataFrame.registerTempTable(registerTableName);
+	    
+    	durSeconds = (float)(System.currentTimeMillis() - startTime) / 1000F;
+    	durMinutes = durSeconds / 60F;
+    	log ("registerTempTable table " + registerTableName + " in seconds: " + durSeconds + " / in minutes: " + durMinutes);
+	    
+    	durSeconds = (float)(System.currentTimeMillis() - firstStartTime) / 1000F;
+    	durMinutes = durSeconds / 60F;
+    	respMsg = "Completed loading table " + fullPathTableName + " in seconds: " + durSeconds + " / in minutes: " + durMinutes;
+    	log (respMsg);
+        return respMsg;    	
+    }
+    
+    private String loadFilesWithMeta (String registerTableName, String fullPathTableName, String metaFileName, String fileListName) throws IOException {
+    	DataFrame combinedDynamicDataFrame = null, dynamicDataFrame = null;
+    	long startTime, firstStartTime;
+    	float durSeconds, durMinutes;
+    	String respMsg;
+
+    	startTime = System.currentTimeMillis();
+	    firstStartTime = startTime;
+	    try {
+		    combinedDynamicDataFrame = hiveContext.table(registerTableName);	    	
+	    	respMsg = "table " + registerTableName + " at " + fullPathTableName + " was already loaded";
+	    	log (respMsg);
+	    	return respMsg;
+	    } catch (Throwable exc) { 
+	    	// hiveContext.table does not declare that it throws NoSuchTableException, so cannot use it in catch clause and
+	    	// have to check for it explicitly
+	    	if (exc instanceof NoSuchTableException) {
+		    	respMsg = "table " + registerTableName + " at " + fullPathTableName + " was not loaded => load it next";
+		    	log (respMsg);	    		
+	    	} else {
+	    		throw exc;
+	    	}
+	    }
+	    
+	    
+		FileInputStream propFileInputStream;
+	    propFileInputStream = new FileInputStream (metaFileName);
+	    properties = new Properties ();
+		properties.load(propFileInputStream);
+		
+		Stream<Entry<Object, Object>> stream = properties.entrySet().stream();
+		Map<String, String> options = stream.collect(Collectors.toMap(
+	            entry -> String.valueOf(entry.getKey()),
+	            entry -> String.valueOf(entry.getValue())));
+
+		int numColumns = Integer.parseInt(properties.getProperty("numColumns"));
+    	StructField structFields [] = new StructField [numColumns];
+		String colName, colType;
+    	StructField structField;
+		
+		// structField = DataTypes.createStructField("File_Source", DataTypes.StringType, true);
+		// structFields[0] = structField;
+		
+		for (int i = 1; i <= numColumns; i++) {
+			colName = properties.getProperty("col" + i + ".name");
+			colType = properties.getProperty("col" + i + ".type");
+			switch (colType) {
+			case "TimeStamp":
+				structField = DataTypes.createStructField(colName, DataTypes.TimestampType, true);
+				break;
+			
+			case "Date":
+				structField = DataTypes.createStructField(colName, DataTypes.DateType, true);
+				break;
+			
+			case "Float":
+				structField = DataTypes.createStructField(colName, DataTypes.FloatType, true);
+				break;
+			
+			case "Integer":
+				structField = DataTypes.createStructField(colName, DataTypes.IntegerType, true);
+				break;
+			
+			case "Long":
+				structField = DataTypes.createStructField(colName, DataTypes.LongType, true);
+				break;
+			
+			case "Short":
+				structField = DataTypes.createStructField(colName, DataTypes.ShortType, true);
+				break;
+			
+			case "Double":
+				structField = DataTypes.createStructField(colName, DataTypes.DoubleType, true);
+				break;
+			
+			case "Boolean":
+				structField = DataTypes.createStructField(colName, DataTypes.BooleanType, true);
+				break;
+			
+			case "Binary":
+				structField = DataTypes.createStructField(colName, DataTypes.BinaryType, true);
+				break;
+			
+			case "Byte":
+				structField = DataTypes.createStructField(colName, DataTypes.ByteType, true);
+				break;
+			
+			case "Null":
+				structField = DataTypes.createStructField(colName, DataTypes.NullType, true);
+				break;
+			
+			default:
+				structField = DataTypes.createStructField(colName, DataTypes.StringType, true);
+			}
+			
+			structFields[i - 1] = structField;
+		}
+		
+    	StructType schema = new StructType(structFields);
+
+    	List<String> fileLlist = new ArrayList<>();
+    	try (BufferedReader br = Files.newBufferedReader(Paths.get(fileListName))) {
+
+			//br returns as stream and convert it into a List
+			fileLlist = br.lines().collect(Collectors.toList());
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+    	
+    	for (String file : fileLlist) {
+        	options.put("path", "file:///" + file);
+	    	dynamicDataFrame = hiveContext.load("com.databricks.spark.csv", schema, options);
+	    	if (combinedDynamicDataFrame == null) {
+	    		combinedDynamicDataFrame = dynamicDataFrame;
+	    	} else {
+	    		combinedDynamicDataFrame = combinedDynamicDataFrame.unionAll(dynamicDataFrame);	    		
+	    	}
+    	}
+    	
+    	durSeconds = (float)(System.currentTimeMillis() - startTime) / 1000F;
+    	durMinutes = durSeconds / 60F;
+    	log ("loaded table " + fullPathTableName + " in seconds: " + durSeconds + " / in minutes: " + durMinutes);
+    	
+    	schema = combinedDynamicDataFrame.schema();
+    	structFields = schema.fields();
+    	for (StructField structFieldLocal : structFields) {
+	    	DataType dataType = structFieldLocal.dataType();
+    		logger.debug(structFieldLocal.name() + " - dataType: " + dataType.typeName());
+    	}
+    	
+	    startTime = System.currentTimeMillis();
+    	combinedDynamicDataFrame.cache();		    	
+    	durSeconds = (float)(System.currentTimeMillis() - startTime) / 1000F;
+    	durMinutes = durSeconds / 60F;
+    	log ("cache table " + fullPathTableName + " in seconds: " + durSeconds + " / in minutes: " + durMinutes);
+
+	    startTime = System.currentTimeMillis();
+	    combinedDynamicDataFrame.registerTempTable(registerTableName);
+	    
+    	durSeconds = (float)(System.currentTimeMillis() - startTime) / 1000F;
+    	durMinutes = durSeconds / 60F;
+    	log ("registerTempTable table " + registerTableName + " in seconds: " + durSeconds + " / in minutes: " + durMinutes);
+	    
+    	durSeconds = (float)(System.currentTimeMillis() - firstStartTime) / 1000F;
+    	durMinutes = durSeconds / 60F;
+    	respMsg = "Completed loading table " + fullPathTableName + " in seconds: " + durSeconds + " / in minutes: " + durMinutes;
+    	log (respMsg);
+        return respMsg;    	
+    }
+    
     private String loadTable (String registerTableName, String fullPathTableName) {
     	DataFrame dynamicDataFrame;
     	long startTime, firstStartTime;
@@ -367,14 +726,18 @@ public class SparkJDBCServer {
 	    	}
 	    }
 	    
-    	dynamicDataFrame = hiveContext.read().format("com.databricks.spark.csv").
+    	 dynamicDataFrame = hiveContext.read().format("com.databricks.spark.csv").
     		option("header", Boolean.toString(headerInCSVFileFlag)).option("inferSchema", Boolean.toString(inferSchemaFlag)).load(fullPathTableName);
+    	
+    	StructType schema;
+    	StructField structFields [];
+    	
     	durSeconds = (float)(System.currentTimeMillis() - startTime) / 1000F;
     	durMinutes = durSeconds / 60F;
     	log ("loaded table " + fullPathTableName + " in seconds: " + durSeconds + " / in minutes: " + durMinutes);
     	
-    	StructType schema = dynamicDataFrame.schema();
-    	StructField [] structFields = schema.fields();
+    	schema = dynamicDataFrame.schema();
+    	structFields = schema.fields();
     	for (StructField structField : structFields) {
 	    	DataType dataType = structField.dataType();
     		logger.debug(structField.name() + " - dataType: " + dataType.typeName());

@@ -1,0 +1,129 @@
+
+###you can uncomment next two lines for easy debug
+###Warning: if master_process is off, there will be only one nginx worker running. Only use it for debug propose.
+
+#daemon  off;
+
+#master_process  off;
+
+#user  nobody;
+worker_processes  1;
+
+#error_log  logs/error.log;
+error_log  logs/error.log  notice;
+#error_log  logs/error.log  info;
+
+#pid        logs/nginx.pid;
+
+
+events {
+    use epoll;
+    multi_accept on;
+    worker_connections  4000;
+}
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+
+    tcp_nopush on;
+    reset_timedout_connection on;
+    client_body_timeout 10;
+    send_timeout 2;
+    #log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+    #                  '$status $body_bytes_sent "$http_referer" '
+    #                  '"$http_user_agent" "$http_x_forwarded_for"';
+
+    #access_log  logs/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    keepalive_timeout  65;
+    keepalive_requests 10000;
+    #gzip  on;
+    
+    ###for win32,  jvm_path maybe is "C:/Program Files/Java/jdk1.7.0_25/jre/bin/server/jvm.dll";
+    ###for macosx, jvm_path maybe is "/Library/Java/JavaVirtualMachines/1.6.0_65-b14-462.jdk/Contents/Libraries/libserver.dylib";
+    ###for ubuntu, jvm_path maybe is "/usr/lib/jvm/java-7-oracle/jre/lib/amd64/server/libjvm.so";
+    ###for centos, jvm_path maybe is "/usr/java/jdk1.6.0_45/jre/lib/amd64/server/libjvm.so";
+    ###for centos 32bit, jvm_path maybe is "/usr/java/jdk1.7.0_51/jre/lib/i386/server/libjvm.so";
+    ###jvm_path "/usr/lib/jvm/java-7-oracle/jre/lib/amd64/server/libjvm.so";
+	jvm_path "/usr/local/nginx-clojure-0.4.0/jdk1.8.0_45/jre/lib/amd64/server/libjvm.so";
+	# jvm_path "/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.79.x86_64/jre/lib/amd64/server/libjvm.so";
+    
+    ### my app jars e.g. clojure-1.5.1.jar , groovy-2.3.4.jar ,etc.
+    ### jvm_var my_other_jars '/home/who/.m2/repository/org/clojure/clojure/1.5.1/clojure-1.5.1.jar';
+    # jvm_var my_other_jars 'C:/Programs/clojure/clojure-1.7.0/clojure-1.7.0.jar';
+    
+    ###jvm_options can be repeated once per option.
+    # jvm_options "-Djava.class.path=/usr/local/nginx-clojure-0.4.0/nginx-1.8.0/jars/nginxhandler.jar:./jars/log4j-1.2.17.jar:./jars/slf4j-api-1.7.7.jar:./jars/slf4j-log4j12-1.7.7.jar:./jars/nginx-clojure-0.4.0.jar:./jars/clojure-1.7.0.jar";
+    # /home/ec2-user/nginxhander/nginxhandler.jar:
+    
+    jvm_options "-Djava.ext.dirs=/usr/local/nginx-clojure-0.4.0/nginx-1.8.0/jars/";
+
+    ###jvm heap memory
+    jvm_options "-Xms1024m";
+    jvm_options "-Xmx1024m";
+    
+    #for enable java remote debug uncomment next two lines
+    #jvm_options "-Xdebug";
+    #jvm_options "-Xrunjdwp:server=y,transport=dt_socket,address=840#{pno},suspend=n";
+
+    ###threads number for request handler thread pool on jvm, default is 0. 
+    ###check more details from 
+    #jvm_workers 8;
+
+    server {
+        listen       8080;
+        server_name  localhost backlog 1024;
+	
+        #charset koi8-r;
+	access_log  off;
+        access_log  logs/host.access.log  combined;
+
+        #access_log  logs/host.access.log  main;
+
+        location /static {
+            root   html;
+            index  index.html index.htm;
+        }
+
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+
+        #error_page  404              /404.html;
+
+        # redirect server error pages to the static page /50x.html
+        #
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+
+       location /nginx/statuscount {
+          content_handler_type 'java';
+          content_handler_name 'com.getcake.nginxhandler.App';
+        }
+       
+       location /clojure {
+          handler_type 'clojure';
+          handler_code ' 
+						(fn[req]
+						  {
+						    :status 200,
+						    :headers {"content-type" "text/plain"},
+						    :body  "Hello Clojure & Nginx!" 
+						    })
+          ';
+       }
+              
+    }
+
+}
