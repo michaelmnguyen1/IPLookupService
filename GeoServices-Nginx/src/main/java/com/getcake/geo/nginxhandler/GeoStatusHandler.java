@@ -17,6 +17,10 @@ import java.util.Map;
 
 import org.apache.log4j.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.getcake.geo.controller.GeoController;
+import com.getcake.util.CakeCommonUtil;
+
 import nginx.clojure.java.ArrayMap;
 import nginx.clojure.java.NginxJavaRingHandler;
 
@@ -26,15 +30,16 @@ public  class GeoStatusHandler implements NginxJavaRingHandler {
 		static int invokeCount = 0, constructorCount = 0;
 		
 		private static final Logger logger = Logger.getLogger(GeoStatusHandler.class);
+		private ObjectMapper jsonMapper;
 				
 		public GeoStatusHandler () {
 			
 			try {
+				jsonMapper = new ObjectMapper();
 				if (GeoIPLookupHandler.geoController == null) {
 					logger.debug("GeoInfoStatisticsApp - GeoIPLookupApp.geoController == null");
 				}
-	        	logger.debug("GeoInfoStatisticsApp done");
-	    		
+	        	logger.debug("GeoStatusHandler init done");	    		
 			} catch (Throwable exc) {
 				exc.printStackTrace();
 				logger.error("", exc);				
@@ -48,7 +53,8 @@ public  class GeoStatusHandler implements NginxJavaRingHandler {
         public Object[] invoke(Map<String, Object> request) {
     		File tmpFile;
     		FileInputStream fileInputStream = null;
-    		String line;
+    		String line, healthCheckResults;
+    		StringBuilder healtResp;
     		BufferedReader reader = null;
     		
         	try {
@@ -70,32 +76,20 @@ public  class GeoStatusHandler implements NginxJavaRingHandler {
         	    
     			fileInputStream = new FileInputStream (uplbFileName);
     	    	// Read one text line at a time and display.
-    	        reader = new BufferedReader(new 
-    	        		InputStreamReader(fileInputStream));
+    	        reader = new BufferedReader(new InputStreamReader(fileInputStream));
 	            line = reader.readLine();
-	            if (line == null || !"up".equalsIgnoreCase(line)) {
-    	    		logger.debug(uplbFileName + "  exists but contains " + line);
-                    return new Object[] { 
-                		NGX_HTTP_SERVICE_UNAVAILABLE, //http status 200
-                        ArrayMap.create(CONTENT_TYPE, "text/plain"), //headers map
-                        ""                        		
-                        };	            	
-	            } 
 	            
+        		healthCheckResults = GeoIPLookupHandler.geoController.healthCheck();
                 return new Object[] { 
                     NGX_HTTP_OK, //http status 200
-                    ArrayMap.create(CONTENT_TYPE, "text/plain"), //headers map
-                    GeoIPLookupHandler.geoController.getStatus() + " micro-seconds"                        		
-                    //response body can be string, File or Array/Collection of them
-                    };
-                
+                    ArrayMap.create(CONTENT_TYPE, "text/plain"), healthCheckResults                       		
+                    };        			
         	} catch (Throwable exc) {
         		logger.error("", exc);
                 return new Object[] { 
                 		NGX_HTTP_INTERNAL_SERVER_ERROR, //http status 200
-                        ArrayMap.create(CONTENT_TYPE, "text/plain"), //headers map
-                        "Java exc: " + exc.getMessage() + " - " + exc.getStackTrace()
-                        };        		
+                        ArrayMap.create(CONTENT_TYPE, "text/plain"), 
+                        exc.getMessage()};        		
         	} finally {
     			try {
             		if (fileInputStream != null) {
@@ -105,7 +99,6 @@ public  class GeoStatusHandler implements NginxJavaRingHandler {
             			reader.close();
             		}
 				} catch (IOException exc2) {
-					// TODO Auto-generated catch block
 					logger.error("", exc2);
 				}
         	} 

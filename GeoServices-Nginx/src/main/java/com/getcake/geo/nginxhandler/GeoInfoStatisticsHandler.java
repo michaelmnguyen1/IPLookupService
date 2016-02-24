@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.getcake.geo.controller.GeoController;
 import com.getcake.geo.model.GeoInfo;
 import com.getcake.geo.model.LoadStatistics;
+import com.getcake.util.CakeCommonUtil;
 
 import nginx.clojure.java.ArrayMap;
 import nginx.clojure.java.NginxJavaRingHandler;
@@ -40,7 +41,7 @@ public  class GeoInfoStatisticsHandler implements NginxJavaRingHandler {
 				if (GeoIPLookupHandler.geoController == null) {
 					logger.debug("GeoInfoStatisticsApp - GeoIPLookupApp.geoController == null");
 				}
-	        	logger.debug("GeoInfoStatisticsApp done");
+	        	logger.debug("GeoInfoStatisticsHandler init done");
 	    		
 			} catch (Throwable exc) {
 				exc.printStackTrace();
@@ -56,7 +57,7 @@ public  class GeoInfoStatisticsHandler implements NginxJavaRingHandler {
         public Object[] invoke(Map<String, Object> request) {
         	String requestMethod;
         	
-        	try {
+        	try { 
         		if ("get".equalsIgnoreCase((String)request.get("request-method"))) {
                 	// logger.debug("ipAddress: " + ipAddress + " loc id: " + geoInfo.getLocationId());
             		// loadStatistics = GeoIPLookupApp.geoController.getGeoInfoStatistics();
@@ -83,8 +84,7 @@ public  class GeoInfoStatisticsHandler implements NginxJavaRingHandler {
                 return new Object[] { 
                 		NGX_HTTP_INTERNAL_SERVER_ERROR, //http status 200
                         ArrayMap.create(CONTENT_TYPE, "text/plain"), //headers map
-                        "Java exc: " + exc.getMessage() + " - " + exc.getStackTrace()
-                        };        		
+                        CakeCommonUtil.convertExceptionToString (exc) };        		
         	}
         }
     }

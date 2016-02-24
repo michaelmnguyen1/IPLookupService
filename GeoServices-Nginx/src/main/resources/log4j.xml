@@ -10,7 +10,7 @@
 		</layout>
 	</appender -->
 	
-	<appender name="FILE" class="org.apache.log4j.FileAppender">
+	<appender name="FILE" class="org.apache.log4j.DailyRollingFileAppender">
 	
 	   <param name="file" value="./logs/geoservices.log"/>
 	   <param name="immediateFlush" value="true"/>

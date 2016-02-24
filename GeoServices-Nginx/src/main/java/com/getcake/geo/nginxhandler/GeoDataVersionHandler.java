@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.getcake.geo.controller.GeoController;
 import com.getcake.geo.model.GeoInfo;
 import com.getcake.geo.model.LoadStatistics;
+import com.getcake.util.CakeCommonUtil;
 
 import nginx.clojure.java.ArrayMap;
 import nginx.clojure.java.NginxJavaRingHandler;
@@ -37,16 +38,14 @@ public  class GeoDataVersionHandler implements NginxJavaRingHandler {
 		private static final Logger logger = Logger.getLogger(GeoDataVersionHandler.class);
 		
     	private GeoController geoController;
-		private ObjectMapper jsonMapper;
 		
 		public GeoDataVersionHandler () {
 			
 			try {
-				jsonMapper = new ObjectMapper();
 				if (GeoIPLookupHandler.geoController == null) {
 					logger.debug("GeoInfoStatisticsApp - GeoIPLookupApp.geoController == null");
 				}
-	        	logger.debug("GeoInfoStatisticsApp done");
+	        	logger.debug("GeoDataVersionHandler init done");
 	    		
 			} catch (Throwable exc) {
 				exc.printStackTrace();
@@ -84,8 +83,7 @@ public  class GeoDataVersionHandler implements NginxJavaRingHandler {
                 return new Object[] { 
                 		NGX_HTTP_INTERNAL_SERVER_ERROR, //http status 200
                         ArrayMap.create(CONTENT_TYPE, "text/plain"), //headers map
-                        "Java exc: " + exc.getMessage() + " - " + exc.getStackTrace()
-                        };        		
+                        CakeCommonUtil.convertExceptionToString (exc) };        		
         	}
         }
     }

@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.StringTokenizer;
 
 
+
 // import javax.servlet.http.HttpServletResponse;
 // import org.slf4j.Logger;
 // import org.slf4j.LoggerFactory;
@@ -23,6 +24,7 @@ import com.getcake.geo.controller.GeoController;
 import com.getcake.geo.model.LoadStatistics;
 import com.getcake.geo.service.IpInvalidException;
 import com.getcake.geo.service.IpNotFoundException;
+import com.getcake.util.CakeCommonUtil;
 
 import nginx.clojure.java.ArrayMap;
 import nginx.clojure.java.NginxJavaRingHandler;
@@ -75,7 +77,7 @@ public  class GeoIPLookupHandler implements NginxJavaRingHandler {
 				
 	        	logger.debug("loadHashCacheDao start");
 	    		geoController.loadHashCacheDao(false, -1);
-	    		geoController.getStatus();
+	    		geoController.selfTest();
 	        	logger.debug("loadHashCacheDao done");
 	    	    
 			} catch (Throwable exc) {
@@ -89,7 +91,7 @@ public  class GeoIPLookupHandler implements NginxJavaRingHandler {
 	    	try {
 		    	LoadStatistics loadStatistics = new LoadStatistics();
 		    	// loadStatistics.accDuration = 1;
-		    	loadStatistics.avgAlgDurationMicroSec = 2;
+		    	loadStatistics.setAvgAlgorthmDurationMicroSec (2);
 		    	loadStatistics.count = 3;
 	    		ObjectMapper mapper = new ObjectMapper();
 	    		String statStr = mapper.writeValueAsString(loadStatistics);
@@ -113,7 +115,7 @@ public  class GeoIPLookupHandler implements NginxJavaRingHandler {
         		strTokenizer = new StringTokenizer (query_string, "=");
         		ipAddressList = strTokenizer.nextToken();
         		ipAddressList = strTokenizer.nextToken();
-            	logger.debug("ipAddressList: " + ipAddressList);
+            	// logger.debug("ipAddressList: " + ipAddressList);
         		
         		/*
             	Iterator keys = request.keySet().iterator();
@@ -134,19 +136,18 @@ public  class GeoIPLookupHandler implements NginxJavaRingHandler {
                 return new Object[] { 
                 		NGX_HTTP_NOT_FOUND, //http status 200
                         ArrayMap.create(CONTENT_TYPE, "text/plain"), //headers map
-                        exc.getLocalizedMessage() };        		
+                        CakeCommonUtil.convertExceptionToString (exc) };        		
         	} catch (IpInvalidException exc) {
                 return new Object[] { 
                 		NGX_HTTP_BAD_REQUEST, //http status 200
                         ArrayMap.create(CONTENT_TYPE, "text/plain"), //headers map
-                        exc.getLocalizedMessage() };        		
+                        CakeCommonUtil.convertExceptionToString (exc) };        		
         	} catch (Throwable exc) {
         		logger.error("", exc);
                 return new Object[] { 
                 		NGX_HTTP_INTERNAL_SERVER_ERROR, //http status 200
                         ArrayMap.create(CONTENT_TYPE, "text/plain"), //headers map
-                        "Unexpected error of " + exc.getLocalizedMessage()
-                        };        		
+                        CakeCommonUtil.convertExceptionToString (exc) };        		
         	}
         	
         }

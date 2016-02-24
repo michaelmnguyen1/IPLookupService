@@ -14,6 +14,7 @@ import java.util.Map;
 import org.apache.log4j.*;
 
 import com.getcake.geo.controller.GeoController;
+import com.getcake.util.CakeCommonUtil;
 
 import nginx.clojure.java.ArrayMap;
 import nginx.clojure.java.NginxJavaRingHandler;
@@ -113,8 +114,7 @@ public  class TestNginxHandler implements NginxJavaRingHandler {
                 return new Object[] { 
                 		NGX_HTTP_INTERNAL_SERVER_ERROR, //http status 200
                         ArrayMap.create(CONTENT_TYPE, "text/plain"), //headers map
-                        "Java  exc: " + exc.getMessage() + " - " + exc.getStackTrace()
-                        };        		
+                        CakeCommonUtil.convertExceptionToString (exc) };        		
         	}
         }
     }
