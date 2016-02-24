@@ -28,6 +28,6 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/Spark-1.4.1"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/CakeUtil"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

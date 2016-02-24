@@ -1,8 +1,12 @@
 package com.getcake.geo.controller;
 
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -17,6 +21,7 @@ import com.getcake.geo.service.GeoService;
 import com.getcake.geo.service.IpInvalidException;
 import com.getcake.geo.service.IpNotFoundException;
 import com.getcake.util.AwsUtil;
+import com.getcake.util.CakeCommonUtil;
 import com.getcake.util.NullValueSerializer;
 
 public class GeoController {
@@ -27,8 +32,9 @@ public class GeoController {
     private GeoService geoService;
     private LoadStatistics loadStatistics; 
     private Properties properties;    
-    private String selfTestIpv4, selfTestIpv6;
+    private String selfTestIpv4, selfTestIpv6, initStatus;
     private long statusCount = 0;
+	private ObjectMapper jsonMapper;
     
 	static {
 		try {
@@ -50,6 +56,8 @@ public class GeoController {
 	
     public GeoController () {
     	loadStatistics = new LoadStatistics ();
+		jsonMapper = new ObjectMapper();
+		// jsonMapper.getSerializerProvider().setNullValueSerializer(new NullValueSerializer());    	
     }
     
     public GeoService getGeoService () {
@@ -66,7 +74,16 @@ public class GeoController {
     	boolean flushCacheFlag, 
     	long topNumRows) throws Throwable  {
     	
-    	return geoService.loadHashCacheDao(flushCacheFlag, topNumRows);
+    	long numNodesLoaded;
+    	
+    	try {
+        	numNodesLoaded = geoService.loadHashCacheDao(flushCacheFlag, topNumRows);
+        	initStatus = "Geo Init Succeeded";
+        	return numNodesLoaded;
+    	} catch (Throwable exc) {
+    		initStatus = CakeCommonUtil.convertExceptionToString (exc);
+    		throw exc;
+    	}
     }
 
     public String getMultiGeoInfo(String ipAddressList) throws IpNotFoundException, IpInvalidException {
@@ -74,16 +91,12 @@ public class GeoController {
     	String ipAddress;
     	StringBuilder geoInfoList = null;
     	GeoISP geoIspResponse;
-    	ObjectMapper jsonMapper;
     	
     	if (ipAddressList == null || ipAddressList.trim().length() == 0) {
     		return "";
     	}
     	
     	ipAddresses = ipAddressList.split(",");
-    	
-		jsonMapper = new ObjectMapper();
-		// jsonMapper.getSerializerProvider().setNullValueSerializer(new NullValueSerializer());
     	
     	geoInfoList = new StringBuilder ();
 		// geoInfoList.append("{ \"geo_info_list\" : ");
@@ -207,8 +220,8 @@ public class GeoController {
 	    
     // @RequestMapping(value = "statistics", method = RequestMethod.GET) throws Throwable
     public LoadStatistics getGeoInfoStatistics()  {
-    	loadStatistics.avgAlgorthmDurationMicroSec = (loadStatistics.allAlgorthmDurationNanoSec / (double)loadStatistics.count) / 1000;
-    	loadStatistics.avgIpFormatConvDurationMicroSec = (loadStatistics.allIpFormatConvDurationNanoSec / (double)loadStatistics.count) / 1000;
+    	loadStatistics.setAvgAlgorthmDurationMicroSec ((loadStatistics.allAlgorthmDurationNanoSec / (double)loadStatistics.count) / 1000);
+    	loadStatistics.setAvgIpFormatConvDurationMicroSec ((loadStatistics.allIpFormatConvDurationNanoSec / (double)loadStatistics.count) / 1000);
     	
     	// ObjectMapper mapper = new ObjectMapper();
     	// return mapper.writeValueAsString (loadStatistics);
@@ -223,8 +236,8 @@ public class GeoController {
     	loadStatistics.maxDuration = 0;
     	loadStatistics.minDuration = Long.MAX_VALUE;
     	*/
-    	loadStatistics.avgAlgorthmDurationMicroSec = 0;
-    	loadStatistics.avgIpFormatConvDurationMicroSec = 0;
+    	loadStatistics.setAvgAlgorthmDurationMicroSec (0);
+    	loadStatistics.setAvgIpFormatConvDurationMicroSec (0);
     	return loadStatistics;
     }    
     
@@ -253,19 +266,94 @@ public class GeoController {
     	return geoService.getIpv6NumNodes();
     }
 
-    public long getStatus() throws IpNotFoundException, IpInvalidException {
+    public String selfTest () throws IpNotFoundException, IpInvalidException {
     	long startTime, durationMicrosec;
     	String resp1, resp2;
+		StringBuilder jsonResp;
+		boolean errFlag = false;
     	
-        startTime = System.nanoTime();
-        resp1 = this.getGeoInfo(selfTestIpv4);
-    	resp2 = this.getGeoInfo(selfTestIpv6);
-        durationMicrosec = (System.nanoTime() - startTime) / 1000;
+		jsonResp = new StringBuilder ();
+		jsonResp.append(" \"self_test_ipv4\":");
+		
+    	startTime = System.nanoTime();
+        try {
+            resp1 = this.getGeoInfo(selfTestIpv4);        	
+        } catch (Throwable exc) {
+        	errFlag = true;
+        	resp1 = "\"" + CakeCommonUtil.convertExceptionToString (exc) + "\"" ;        		        	
+        }
 		logger.debug("result of ipv4 self-test " + selfTestIpv4 + ": " + resp1);	    		
+		jsonResp.append(resp1);
+		
+		jsonResp.append(", \"self_test_ipv6\":");
+        try {
+        	resp2 = this.getGeoInfo(selfTestIpv6);
+        } catch (Throwable exc) {
+        	errFlag = true;
+        	resp2 = "\"" + CakeCommonUtil.convertExceptionToString (exc) + "\"" ;        		        	
+        }
 		logger.debug("result of ipv6 self-test " + selfTestIpv6 + ": " + resp2);	    		
-    	return durationMicrosec;
+		jsonResp.append(resp2);
+		
+		jsonResp.append(", \"self_test_duration_micro_seconds\": \"");    	
+        durationMicrosec = (System.nanoTime() - startTime) / 1000;
+		jsonResp.append(durationMicrosec);    	
+		jsonResp.append("\" ");    	
+        
+		if (!errFlag) {
+			return jsonResp.toString();			
+		} else {
+			throw new RuntimeException (jsonResp.toString());			
+		}
+    	// return " \"self_test_ipv4_" + selfTestIpv4 + "\":"  + resp1 + ", \"self_test_ipv6_" + selfTestIpv6 + "\":" + resp2 +
+    	//	", \"self_test_duration_micro_seconds\": \"" + durationMicrosec + "\" ";
     }
 
+    public String healthCheck () throws IpNotFoundException, IpInvalidException, JsonProcessingException {
+		String selfTestResults, statisticsJson;
+		StringBuilder healtResp;
+		boolean errFlag = false;
+		
+		healtResp = new StringBuilder ();
+		healtResp.append("{");
+		healtResp.append("\"init_status\":\"");
+		healtResp.append(initStatus);
+		healtResp.append("\",");
+		
+		try {
+			selfTestResults = selfTest();			
+		} catch (Throwable exc) {
+			errFlag = true;
+			selfTestResults = exc.getMessage();
+			/*
+			healtResp.append("\"self_test_failed_reason\": \"");
+			healtResp.append(CakeCommonUtil.convertExceptionToString (exc));        					
+			healtResp.append("\""); */
+		} 
+		
+		healtResp.append(selfTestResults);		
+		healtResp.append(",");
+		
+		healtResp.append("\"load_statistics\": ");
+		try {
+			statisticsJson = jsonMapper.writeValueAsString(getGeoInfoStatistics());			
+			healtResp.append(statisticsJson);
+		} catch (Throwable exc) {
+			errFlag = true;
+			healtResp.append("\"");
+			healtResp.append(CakeCommonUtil.convertExceptionToString (exc));
+			healtResp.append("\"");
+		}		
+		
+		healtResp.append("}");
+    				
+		if (!errFlag) {
+	    	return healtResp.toString();			
+		} else {
+			throw new RuntimeException (healtResp.toString());
+		}
+    }
+    
     public long getStatusCount() {    	
     	return ++statusCount;
     }
@@ -287,7 +375,6 @@ public class GeoController {
     }
     
     public Properties init (String propFileName)  throws IOException {
-	    properties = new Properties ();
 	    properties = AwsUtil.loadProperties (propFileName);
 	    
 	    selfTestIpv4 = properties.getProperty("selfTestIpv4");

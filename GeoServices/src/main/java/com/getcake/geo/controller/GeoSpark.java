@@ -2,6 +2,8 @@ package com.getcake.geo.controller;
 
 import static spark.Spark.*;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.InetAddress;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -9,7 +11,13 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
+
+
+
 import javax.servlet.http.HttpServletResponse;
+
+
+
 
 import org.apache.log4j.*;
 
@@ -18,6 +26,11 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.getcake.geo.service.IpInvalidException;
 import com.getcake.geo.service.IpNotFoundException;
+import com.getcake.geo.service.JsonTransformer;
+
+
+
+import com.getcake.util.CakeCommonUtil;
 
 import spark.Spark;
 
@@ -133,16 +146,16 @@ public class GeoSpark {
 
             get("/geoservices/health", (request, response) -> {
                 try {
-					return geoController.getStatus();
+					return geoController.healthCheck();
             	} catch (IpNotFoundException exc) {
             		response.status(HttpServletResponse.SC_NOT_FOUND);
-            		return exc.getLocalizedMessage();            		
+            		return CakeCommonUtil.convertExceptionToString (exc);
             	} catch (IpInvalidException exc) {
             		response.status(HttpServletResponse.SC_BAD_REQUEST);
-            		return exc.getLocalizedMessage();            		
+            		return CakeCommonUtil.convertExceptionToString (exc);
             	} catch (Throwable exc) {
             		response.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            		return exc.getLocalizedMessage();
+            		return CakeCommonUtil.convertExceptionToString (exc);
             	}
             });
 
@@ -185,7 +198,7 @@ public class GeoSpark {
             	try {
                     return geoController.loadHashCacheDao(flushCacheFlag, topNumRows);            		
             	} catch (Throwable exc) {
-            		return "Error";
+            		return CakeCommonUtil.convertExceptionToString (exc);
             	}
             }, jsonTransformer);
     		
@@ -194,14 +207,14 @@ public class GeoSpark {
                     return geoController.getMultiGeoInfo(request.queryParams("ipaddresses"));            		
             	} catch (IpNotFoundException exc) {
             		response.status(HttpServletResponse.SC_NOT_FOUND);
-            		return exc.getLocalizedMessage();            		
+            		return CakeCommonUtil.convertExceptionToString (exc);
             	} catch (IpInvalidException exc) {
             		response.status(HttpServletResponse.SC_BAD_REQUEST);
-            		return exc.getLocalizedMessage();            		
+            		return CakeCommonUtil.convertExceptionToString (exc);
             	} catch (Throwable exc) {
             		logger.error(exc);
             		response.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            		return exc.getLocalizedMessage();
+            		return CakeCommonUtil.convertExceptionToString (exc);
             	}
             }); 
     		

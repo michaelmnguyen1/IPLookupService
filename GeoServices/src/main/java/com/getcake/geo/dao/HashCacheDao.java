@@ -80,11 +80,11 @@ public class HashCacheDao extends BaseDao {
         geoDataVersion = properties.getProperty("geoDataVersion");
         logger.debug("geoDataVersion: " + geoDataVersion);
         if ("sparkSql".equalsIgnoreCase(dataSourceType)) {
-            locationTableName = MsSqlDao.IP_LOCATION_TABLE_NAME_VER_PREFIX + geoDataVersion;
-            ispTableName = MsSqlDao.IP_ISP_TABLE_NAME_PREFIX + geoDataVersion;        	
+            locationTableName = GeoMsSqlDao.IP_LOCATION_TABLE_NAME_VER_PREFIX + geoDataVersion;
+            ispTableName = GeoMsSqlDao.IP_ISP_TABLE_NAME_PREFIX + geoDataVersion;        	
         } else {
-            locationTableName = MsSqlDao.IP_LOCATION_TABLE_NAME ;
-            ispTableName = MsSqlDao.IP_ISP_TABLE_NAME;        	        	
+            locationTableName = GeoMsSqlDao.IP_LOCATION_TABLE_NAME ;
+            ispTableName = GeoMsSqlDao.IP_ISP_TABLE_NAME;        	        	
         }
         
 		region = properties.getProperty("region");

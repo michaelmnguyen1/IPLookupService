@@ -9,7 +9,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.getcake.dao.*;
 import com.getcake.geo.dao.HashCacheDao;
-import com.getcake.geo.dao.MsSqlDao;
+import com.getcake.geo.dao.GeoMsSqlDao;
 import com.getcake.geo.dao.S3Dao;
 import com.getcake.geo.model.*;
 import com.getcake.util.NullValueSerializer;
@@ -23,9 +23,8 @@ public class GeoService {
 	private static GeoService instance;
 	
 	// private MemSqlDao memSqlDao;
-	private MsSqlDao msSqlDao;
-    private S3Dao s3Dao;
-    
+	private GeoMsSqlDao msSqlDao;
+    private S3Dao s3Dao;    
 	private HashCacheDao hashCacheDao;
 	
 	private Map<Integer, String> geoInfoMap;
@@ -63,7 +62,6 @@ public class GeoService {
 		
 		blankIspInfoJsonFragment = jsonOutput.toString();
 	}
-
 	
 	private static final long MILLISEC_PER_MINUTE = 1000 * 60;
 	public long loadHashCacheDao (boolean flushCacheFlag, long topNumRows) throws Throwable  {
@@ -151,7 +149,7 @@ public class GeoService {
 	    	topLevelDataPath += "-" + region;	    	
 	    } 
 	    
-		this.msSqlDao = MsSqlDao.getInstance();
+		this.msSqlDao = GeoMsSqlDao.getInstance();
 		msSqlDao.init(properties);		
 		this.s3Dao = S3Dao.getInstance();
 	}
