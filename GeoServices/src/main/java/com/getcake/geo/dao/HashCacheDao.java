@@ -1,3 +1,6 @@
+/*
+ * Michael M. Nguyen
+ */
 package com.getcake.geo.dao;
 
 import java.io.IOException;
@@ -70,28 +73,28 @@ public class HashCacheDao extends BaseDao {
     public String getGeoDataVersion () {
     	return geoDataVersion;
     }
-	
+
 	public void init(Properties properties) {
 		String region;
-		
+
 		this.properties = properties;
 		dataSourceType = properties.getProperty("dataSourceType");
-		
+
         geoDataVersion = properties.getProperty("geoDataVersion");
         logger.debug("geoDataVersion: " + geoDataVersion);
         if ("sparkSql".equalsIgnoreCase(dataSourceType)) {
             locationTableName = GeoMsSqlDao.IP_LOCATION_TABLE_NAME_VER_PREFIX + geoDataVersion;
-            ispTableName = GeoMsSqlDao.IP_ISP_TABLE_NAME_PREFIX + geoDataVersion;        	
+            ispTableName = GeoMsSqlDao.IP_ISP_TABLE_NAME_PREFIX + geoDataVersion;
         } else {
             locationTableName = GeoMsSqlDao.IP_LOCATION_TABLE_NAME ;
-            ispTableName = GeoMsSqlDao.IP_ISP_TABLE_NAME;        	        	
+            ispTableName = GeoMsSqlDao.IP_ISP_TABLE_NAME;
         }
-        
+
 		region = properties.getProperty("region");
 		if (region != null) {
-			dbJdbcUrl = properties.getProperty("dbJdbcUrl." + region);			
+			dbJdbcUrl = properties.getProperty("dbJdbcUrl." + region);
 		} else {
-			dbJdbcUrl = properties.getProperty("dbJdbcUrl.default");			
+			dbJdbcUrl = properties.getProperty("dbJdbcUrl.default");
 		}
 		logger.debug("dbJdbcUrl." + region + ": " + dbJdbcUrl);
 		dbDriver = properties.getProperty("dbDriver");
@@ -146,9 +149,9 @@ public class HashCacheDao extends BaseDao {
 		if ("msSql".equalsIgnoreCase(dataSourceType)) {
 			this.loadCacheIpv6AllDiffByte_Binary(ispTableName, ispIpv6Cache, flushCacheFlag, 1, numBytes, topNumRows);
 		} else {
-			this.loadCacheIpv6AllDiffByte_String(ispTableName, ispIpv6Cache, flushCacheFlag, 1, numBytes, topNumRows);			
+			this.loadCacheIpv6AllDiffByte_String(ispTableName, ispIpv6Cache, flushCacheFlag, 1, numBytes, topNumRows);
 		}
-		
+
 		for (int startByteNum = 1; startByteNum < 16; startByteNum++) {
 			if ("msSql".equalsIgnoreCase(dataSourceType)) {
 				count = loadCacheIpv6FirstNByte_Binary(ispTableName,
@@ -199,9 +202,9 @@ public class HashCacheDao extends BaseDao {
 		if ("msSql".equalsIgnoreCase(dataSourceType)) {
 			this.loadCacheIpv6AllDiffByte_Binary(locationTableName, locationIpv6Cache, flushCacheFlag, 1, numBytes, topNumRows);
 		} else {
-			this.loadCacheIpv6AllDiffByte_String(locationTableName, locationIpv6Cache, flushCacheFlag, 1, numBytes, topNumRows);			
+			this.loadCacheIpv6AllDiffByte_String(locationTableName, locationIpv6Cache, flushCacheFlag, 1, numBytes, topNumRows);
 		}
-		
+
 		for (int startByteNum = 1; startByteNum < 16; startByteNum++) {
 			if ("msSql".equalsIgnoreCase(dataSourceType)) {
 				count = loadCacheIpv6FirstNByte_Binary(locationTableName,
@@ -265,9 +268,9 @@ public class HashCacheDao extends BaseDao {
 		if ("msSql".equalsIgnoreCase(dataSourceType)) {
 			this.loadCacheIpv4AllDiffByte_Binary(ispTableName, ispIpv4Cache, flushCacheFlag, 1, numBytes, topNumRows);
 		} else {
-			this.loadCacheIpv4AllDiffByte_String(ispTableName, ispIpv4Cache, flushCacheFlag, 1, numBytes, topNumRows);			
+			this.loadCacheIpv4AllDiffByte_String(ispTableName, ispIpv4Cache, flushCacheFlag, 1, numBytes, topNumRows);
 		}
-		
+
 		for (int startByteNum = 1; startByteNum < numBytes; startByteNum++) {
 			if ("msSql".equalsIgnoreCase(dataSourceType)) {
 				accCount += loadCacheIpv4FirstNByte_Binary(ispTableName,
@@ -334,9 +337,9 @@ public class HashCacheDao extends BaseDao {
 		if ("msSql".equalsIgnoreCase(dataSourceType)) {
 			this.loadCacheIpv4AllDiffByte_Binary(locationTableName, locationIpv4Cache, flushCacheFlag, 1, numBytes, topNumRows);
 		} else {
-			this.loadCacheIpv4AllDiffByte_String(locationTableName, locationIpv4Cache, flushCacheFlag, 1, numBytes, topNumRows);			
+			this.loadCacheIpv4AllDiffByte_String(locationTableName, locationIpv4Cache, flushCacheFlag, 1, numBytes, topNumRows);
 		}
-		
+
 		for (int startByteNum = 1; startByteNum < numBytes; startByteNum++) {
 			if ("msSql".equalsIgnoreCase(dataSourceType)) {
 				accCount += loadCacheIpv4FirstNByte_Binary(locationTableName,
@@ -863,10 +866,10 @@ public class HashCacheDao extends BaseDao {
 				byteEndNum = Long.parseLong(byteEndStr, 16);
 
 				startList.add(bytestartNum);
-				endList.add(byteEndNum); 
+				endList.add(byteEndNum);
 				locationIdList.add(targetId);
 			}
-			
+
 			if (count > 0) {
 				if (nodeLists != null) {
 					nodeLists.setStartArray(startList.stream()
@@ -919,7 +922,7 @@ public class HashCacheDao extends BaseDao {
 		}
 		return count;
 	}
-	
+
 	public int loadCacheIpv4AllDiffByte_Binary(String tableName,
 			Ipv4Cache ipCache, boolean flushCacheFlag, int startByteNum,
 			int numBytes, long topNumRows) throws Throwable {
@@ -942,7 +945,7 @@ public class HashCacheDao extends BaseDao {
 			System.out.println(logMsg);
 
 			nodeLists = new Ipv4RangeNode();
-			ipCache.allBytesDiffCache = nodeLists;			
+			ipCache.allBytesDiffCache = nodeLists;
 			startList = new ArrayList<Long>();
 			endList = new ArrayList<Long>();
 			locationIdList = new ArrayList<Integer>();
@@ -1053,7 +1056,7 @@ public class HashCacheDao extends BaseDao {
 		}
 		return count;
 	}
-	
+
 	public int loadCacheIpv6AllDiffByte_Binary(String tableName, Ipv6Cache ipCache, boolean flushCacheFlag, int startByteNum,
 			int numBytes, long topNumRows) {
 		long startTime, endTime;
@@ -1075,7 +1078,7 @@ public class HashCacheDao extends BaseDao {
 			System.out.println(logMsg);
 
 			nodeLists = new Ipv6RangeNode();
-			ipCache.allBytesDiffCache = nodeLists;			
+			ipCache.allBytesDiffCache = nodeLists;
 			startList = new ArrayList<BigInteger>();
 			endList = new ArrayList<BigInteger>();
 			locationIdList = new ArrayList<Integer>();
@@ -1176,7 +1179,7 @@ public class HashCacheDao extends BaseDao {
 		}
 		return count;
 	}
-	
+
 	public int loadCacheIpv6AllDiffByte_String (String tableName, Ipv6Cache ipCache, boolean flushCacheFlag, int startByteNum,
 		int numBytes, long topNumRows)  {
 		long startTime, endTime;
@@ -1198,7 +1201,7 @@ public class HashCacheDao extends BaseDao {
 			System.out.println(logMsg);
 
 			nodeLists = new Ipv6RangeNode();
-			ipCache.allBytesDiffCache = nodeLists;			
+			ipCache.allBytesDiffCache = nodeLists;
 			startList = new ArrayList<BigInteger>();
 			endList = new ArrayList<BigInteger>();
 			locationIdList = new ArrayList<Integer>();
@@ -1303,7 +1306,7 @@ public class HashCacheDao extends BaseDao {
 		}
 		return count;
 	}
-	
+
 	public int loadCacheIpv6FirstNByte_String(String tableName,
 			Ipv6Cache ipCache, boolean flushCacheFlag, int startByteNum,
 			int numBytes, long topNumRows)  {
@@ -1312,7 +1315,7 @@ public class HashCacheDao extends BaseDao {
 		Connection sourceConn = null;
 		ResultSet sourceRs = null;
 		int count = 0, midByteNum, endByteLen, targetId = -1, endMidByteNum, origStartByteNum = -1;
-		String bytePrefixStr = null, byteStartStr = null, byteEndStr = null, sql, ipv6_start = null, 
+		String bytePrefixStr = null, byteStartStr = null, byteEndStr = null, sql, ipv6_start = null,
 				ipv6_end = null, logMsg;
 		BigInteger bytePrefixNum, prevBytePrefixNum = BigInteger.valueOf(-1);
 		BigInteger bytestartNum, byteEndNum;
@@ -1510,7 +1513,7 @@ public class HashCacheDao extends BaseDao {
 		Connection sourceConn = null;
 		ResultSet sourceRs = null;
 		int count = 0, midByteNum, endByteLen, targetId = -1;
-		String bytePrefixStr = null, byteStartStr = null, byteEndStr = null, sql, sqlPrefix, 
+		String bytePrefixStr = null, byteStartStr = null, byteEndStr = null, sql, sqlPrefix,
 			ipv6_start = null, ipv6_end = null, logMsg;
 		BigInteger bytePrefixNum, prevBytePrefixNum = BigInteger.valueOf(-1);
 		BigInteger bytestartNum, byteEndNum;
@@ -1739,7 +1742,7 @@ public class HashCacheDao extends BaseDao {
 		return geoInfoMap;
 	}
 
-	
+
 	public Map<Integer, String> loadGeoInfo_Binary() {
 		Map<Integer, String> geoInfoMap = null;
 		GeoInfo geoInfo;
@@ -1780,12 +1783,12 @@ public class HashCacheDao extends BaseDao {
 
 				jsonOutput.delete(0, jsonOutput.length());
 				jsonOutput.append(jsonMapper.writeValueAsString(geoIsp));
-				
+
 				jsonOutput.delete(0, jsonOutput.indexOf("geo_info", 0) - 2);
-				
+
 				jsonOutput.delete(jsonOutput.indexOf("isp_info", 0) - 2, jsonOutput.length());
-				
-				geoInfoMap.put(geoInfo.getLocationId(), jsonOutput.toString()); 
+
+				geoInfoMap.put(geoInfo.getLocationId(), jsonOutput.toString());
 				count++;
 			}
 			endTime = Calendar.getInstance().getTimeInMillis();
@@ -1795,12 +1798,12 @@ public class HashCacheDao extends BaseDao {
 			logger.error("", exc);
 			try {
 				logger.error("locationId: " + sourceRs.getInt("locationId") + " - latitude: " +
-						sourceRs.getFloat("latitude") + 
-						" - longitude: " + sourceRs.getFloat("longitude") + " - jsonOutput: " + jsonOutput);				
+						sourceRs.getFloat("latitude") +
+						" - longitude: " + sourceRs.getFloat("longitude") + " - jsonOutput: " + jsonOutput);
 			} catch (Throwable exc2) {
-				logger.error("", exc2);				
+				logger.error("", exc2);
 			}
-			throw new RuntimeException (exc);				
+			throw new RuntimeException (exc);
 		} finally {
 			this.closeDBResources(sourceConn, sourceStmt, sourceRs);
 		}
@@ -1856,12 +1859,12 @@ public class HashCacheDao extends BaseDao {
 		} catch (Throwable exc) {
 			logger.error("", exc);
 			try {
-				logger.error("ispId: " + sourceRs.getInt("ispId") + " - provder: " + 
-						  sourceRs.getString("providerName") + " - jsonOutput: " + jsonOutput);				
+				logger.error("ispId: " + sourceRs.getInt("ispId") + " - provder: " +
+						  sourceRs.getString("providerName") + " - jsonOutput: " + jsonOutput);
 			} catch (Throwable exc2) {
-				logger.error("", exc2);				
+				logger.error("", exc2);
 			}
-			throw new RuntimeException (exc);				
+			throw new RuntimeException (exc);
 		} finally {
 			this.closeDBResources(sourceConn, sourceStmt, sourceRs);
 		}
@@ -1899,7 +1902,7 @@ public class HashCacheDao extends BaseDao {
 			System.out.println(logMsg);
 
 			startTime = Calendar.getInstance().getTimeInMillis();
-			sourceConn = getConnection(); 
+			sourceConn = getConnection();
 			sql = "SELECT * " + " FROM  " + tableName
 					+ " WHERE length (ipv6_end) = 8  "
 					+ " and ipv6_start = ipv6_end ";
@@ -1954,13 +1957,13 @@ public class HashCacheDao extends BaseDao {
 					+ " - minNodeIpEnd: " + ipCache.minNodeIpEnd;
 		} catch (Throwable exc) {
 			logger.error("", exc);
-			throw new RuntimeException (exc);				
+			throw new RuntimeException (exc);
 		} finally {
 			this.closeDBResources(sourceConn, sourceStmt, sourceRs);
 		}
 		return count;
 	}
-	
+
 	public int loadCacheIpv4FirstFourBytes_Binary(String tableName,
 			Ipv4Cache ipCache, boolean flushCacheFlag, long topNumRows) {
 		long startTime, endTime;
@@ -1986,7 +1989,7 @@ public class HashCacheDao extends BaseDao {
 			}
 
 			startTime = Calendar.getInstance().getTimeInMillis();
-			sourceConn = getConnection(); 
+			sourceConn = getConnection();
 			sql = sqlPrefix + " * " + "FROM " + tableName + " t  (nolock) "
 					+ "WHERE len(ipv6_end) = 4  "
 					+ "and ipv6_start = ipv6_end " + "order by ipv6_start";
@@ -2043,7 +2046,7 @@ public class HashCacheDao extends BaseDao {
 					+ " - minNodeIpEnd: " + ipCache.minNodeIpEnd;
 		} catch (Throwable exc) {
 			logger.error("", exc);
-			throw new RuntimeException (exc);				
+			throw new RuntimeException (exc);
 		} finally {
 			this.closeDBResources(sourceConn, sourceStmt, sourceRs);
 		}
@@ -2106,11 +2109,11 @@ public class HashCacheDao extends BaseDao {
 					break;
 				}
 			}
-			
+
 			if (targetId == 0 && ipv4Cache.allBytesDiffCache != null) {
 				byteNum = Long.parseLong(ipAddress, 16);
 				targetId = getLocationIdBinarySearchIpv4(ipAddress, byteNum, ipv4Cache.allBytesDiffCache);
-				
+
 			}
 			return targetId;
 		} catch (Throwable exc) {
@@ -2186,12 +2189,12 @@ public class HashCacheDao extends BaseDao {
 					break;
 				}
 			}
-			
+
 			if (targetId == 0 && ipv6Cache.allBytesDiffCache != null) {
-				byteNum = new BigInteger(ipAddress, 16); 
-				targetId = getLocationIdBinarySearchIpV6(ipAddress, byteNum, ipv6Cache.allBytesDiffCache);				
+				byteNum = new BigInteger(ipAddress, 16);
+				targetId = getLocationIdBinarySearchIpV6(ipAddress, byteNum, ipv6Cache.allBytesDiffCache);
 			}
-			
+
 			return targetId;
 		} catch (Throwable exc) {
 			logger.error("getLocationId err for ipAddress:" + ipAddress, exc);
@@ -2342,7 +2345,7 @@ public class HashCacheDao extends BaseDao {
 	 * sql, sqlPrefix; long bytePrefixNum, prevBytePrefixNum = -1; long
 	 * bytestartNum, byteEndNum; List<Long> startList = null, endList = null;
 	 * List<Integer> locationIdList = null; IpRangeNode nodeLists = null;
-	 * 
+	 *
 	 * try { startTime = Calendar.getInstance().getTimeInMillis(); sourceConn =
 	 * dataSource.getConnection(); // DriverManager.getConnection(url, username,
 	 * password); midByteNum = startByteNum + 1; endByteLen = 4 - startByteNum;
@@ -2358,8 +2361,8 @@ public class HashCacheDao extends BaseDao {
 	 * ") = SUBSTRING(t.ipv6_end, 1, " + startByteNum + ")  " +
 	 * "order by bytePrefixStr, byteStartStr;"; sourceStmt =
 	 * sourceConn.prepareStatement(sql);
-	 * 
-	 * 
+	 *
+	 *
 	 * "SELECT TOP 100 SUBSTRING(t.ipv6_start, 1, 1) as bytePrefixStr, SUBSTRING(t.ipv6_start, 2, 3) as byteStartStr, "
 	 * + "SUBSTRING(t.ipv6_end, 2, 3) as byteEndStr, * " +
 	 * "FROM _shared.dbo.ipv6_city_A t  (nolock) " +
@@ -2367,7 +2370,7 @@ public class HashCacheDao extends BaseDao {
 	 * "and SUBSTRING(t.ipv6_start, 1, 2) != SUBSTRING(t.ipv6_end, 1, 2)  " +
 	 * "and SUBSTRING(t.ipv6_start, 1, 1) = SUBSTRING(t.ipv6_end, 1, 1)  " +
 	 * "order by bytePrefixStr, byteStartStr;" );
-	 * 
+	 *
 	 * sourceRs = sourceStmt.executeQuery(); endTime =
 	 * Calendar.getInstance().getTimeInMillis(); logger.debug("");
 	 * logger.debug("Ipv4 byte(s):" + startByteNum + " sql execution (ms): " +
@@ -2378,7 +2381,7 @@ public class HashCacheDao extends BaseDao {
 	 * sourceRs.getString("byteStartStr"); byteEndStr =
 	 * sourceRs.getString("byteEndStr"); locationId =
 	 * sourceRs.getInt("location_id");
-	 * 
+	 *
 	 * count++; ipv4NumNodes++; if ((count % LOAD_LOG_INTERVAL) == 1) {
 	 * logger.debug ("  Running check Ipv4 byte(s)" + startByteNum +
 	 * " - totalNodes:" + ipv4NumNodes + " - rows:" + count + " location_id:" +
@@ -2386,27 +2389,27 @@ public class HashCacheDao extends BaseDao {
 	 * " - byteStartStr: " + byteStartStr + " - byteEndStr: " + byteEndStr +
 	 * " - ipv6_start: " + sourceRs.getString("ipv6_start") + " - ipv6_end: " +
 	 * sourceRs.getString("ipv6_end")); }
-	 * 
+	 *
 	 * bytePrefixNum = Long.parseLong(bytePrefixStr, 16); bytestartNum =
 	 * Long.parseLong(byteStartStr, 16); byteEndNum = Long.parseLong(byteEndStr,
 	 * 16);
-	 * 
+	 *
 	 * if (bytePrefixNum != prevBytePrefixNum) {
-	 * 
+	 *
 	 * if (nodeLists != null){
 	 * nodeLists.setStartArray(startList.stream().mapToLong(i->i).toArray());
 	 * nodeLists.setEndArray(endList.stream().mapToLong(i->i).toArray());
 	 * nodeLists
 	 * .setLocationIdArray(locationIdList.stream().mapToInt(i->i).toArray());
-	 * 
+	 *
 	 * if (startList.size() > ipv4MaxNodeLength) { ipv4MaxNodeLength =
 	 * startList.size(); ipv4MaxNodeIpStart = sourceRs.getString("ipv6_start");
 	 * ipv4MaxNodeIpEnd = sourceRs.getString("ipv6_end");
-	 * 
+	 *
 	 * } if (startList.size() < ipv4MinNodeLength) { ipv4MinNodeLength =
 	 * startList.size(); ipv4MinNodeIpStart = sourceRs.getString("ipv6_start");
 	 * ipv4MinNodeIpEnd = sourceRs.getString("ipv6_end"); } }
-	 * 
+	 *
 	 * nodeLists = ipv4FirstLevelCache.get(bytePrefixNum); // double check for
 	 * bug. should be null if (nodeLists == null) { nodeLists = new
 	 * IpRangeNode(); startList.clear(); // startList = new ArrayList<Long>();
@@ -2415,16 +2418,16 @@ public class HashCacheDao extends BaseDao {
 	 * nodeLists); } else { // // if (prevNodeLists != nodeLists)
 	 * logger.error("Unexpected new nodeLists != null" + bytePrefixNum +
 	 * " - ipv6_start" + sourceRs.getString("ipv6_start")); } }
-	 * 
+	 *
 	 * startList.add(bytestartNum); endList.add(byteEndNum);
 	 * locationIdList.add(locationId); prevBytePrefixNum = bytePrefixNum;
-	 * 
+	 *
 	 * } if (nodeLists != null) {
 	 * nodeLists.setStartArray(startList.stream().mapToLong(i->i).toArray());
 	 * nodeLists.setEndArray(endList.stream().mapToLong(i->i).toArray());
 	 * nodeLists
 	 * .setLocationIdArray(locationIdList.stream().mapToInt(i->i).toArray()); }
-	 * 
+	 *
 	 * if (startList.size() > ipv4MaxNodeLength) { ipv4MaxNodeLength =
 	 * startList.size(); ipv4MaxNodeIpStart = sourceRs.getString("ipv6_start");
 	 * ipv4MaxNodeIpEnd = sourceRs.getString("ipv6_end"); } if (startList.size()
@@ -2432,7 +2435,7 @@ public class HashCacheDao extends BaseDao {
 	 * ipv4MinNodeIpStart = sourceRs.getString("ipv6_start"); ipv4MinNodeIpEnd =
 	 * sourceRs.getString("ipv6_end"); } endTime =
 	 * Calendar.getInstance().getTimeInMillis();
-	 * 
+	 *
 	 * logger.debug("Ipv4 byte(s):" + startByteNum + " - dur(ms):" + (endTime -
 	 * startTime) + " - totalNodes:" + ipv4NumNodes + " - # rows loaded:" +
 	 * count + " - ipv4MaxNodeLength:" + ipv4MaxNodeLength +
@@ -2440,7 +2443,7 @@ public class HashCacheDao extends BaseDao {
 	 * ipv4MaxNodeIpStart + " - ipv4MaxNodeIpEnd: " + ipv4MaxNodeIpEnd +
 	 * " - ipv4MinNodeIpStart: " + ipv4MinNodeIpStart + " - ipv4MinNodeIpEnd: "
 	 * + ipv4MinNodeIpEnd);
-	 * 
+	 *
 	 * } catch (Throwable exc) { logger.error("", exc); } finally { } return
 	 * count; }
 	 */
@@ -2454,7 +2457,7 @@ public class HashCacheDao extends BaseDao {
 	 * sql, sqlPrefix; long bytePrefixNum, prevBytePrefixNum = -1; long
 	 * bytestartNum, byteEndNum; List<Long> startList = null, endList = null;
 	 * List<Integer> locationIdList = null; IpRangeNode nodeLists = null;
-	 * 
+	 *
 	 * try { startTime = Calendar.getInstance().getTimeInMillis(); sourceConn =
 	 * dataSource.getConnection(); // DriverManager.getConnection(url, username,
 	 * password); midByteNum = startByteNum + 1; endByteLen = 4 - startByteNum;
@@ -2470,7 +2473,7 @@ public class HashCacheDao extends BaseDao {
 	 * ") = SUBSTRING(t.ipv6_end, 1, " + startByteNum + ")  " +
 	 * "order by bytePrefixStr, byteStartStr;"; sourceStmt =
 	 * sourceConn.prepareStatement(sql);
-	 * 
+	 *
 	 * "SELECT TOP 100 SUBSTRING(t.ipv6_start, 1, 1) as bytePrefixStr, SUBSTRING(t.ipv6_start, 2, 3) as byteStartStr, "
 	 * + "SUBSTRING(t.ipv6_end, 2, 3) as byteEndStr, * " +
 	 * "FROM _shared.dbo.ipv6_city_A t  (nolock) " +
@@ -2488,7 +2491,7 @@ public class HashCacheDao extends BaseDao {
 	 * sourceRs.getString("byteStartStr"); byteEndStr =
 	 * sourceRs.getString("byteEndStr"); locationId =
 	 * sourceRs.getInt("location_id");
-	 * 
+	 *
 	 * count++; ipv4NumNodes++; if ((count % LOAD_LOG_INTERVAL) == 1) {
 	 * logger.debug ("  Running check Ipv4 byte(s)" + startByteNum +
 	 * " - totalNodes:" + ipv4NumNodes + " - rows:" + count + " location_id:" +
@@ -2496,27 +2499,27 @@ public class HashCacheDao extends BaseDao {
 	 * " - byteStartStr: " + byteStartStr + " - byteEndStr: " + byteEndStr +
 	 * " - ipv6_start: " + sourceRs.getString("ipv6_start") + " - ipv6_end: " +
 	 * sourceRs.getString("ipv6_end")); }
-	 * 
+	 *
 	 * bytePrefixNum = Long.parseLong(bytePrefixStr, 16); bytestartNum =
 	 * Long.parseLong(byteStartStr, 16); byteEndNum = Long.parseLong(byteEndStr,
 	 * 16);
-	 * 
+	 *
 	 * if (bytePrefixNum != prevBytePrefixNum) {
-	 * 
+	 *
 	 * if (nodeLists != null){
 	 * nodeLists.setStartArray(startList.stream().mapToLong(i->i).toArray());
 	 * nodeLists.setEndArray(endList.stream().mapToLong(i->i).toArray());
 	 * nodeLists
 	 * .setLocationIdArray(locationIdList.stream().mapToInt(i->i).toArray());
-	 * 
+	 *
 	 * if (startList.size() > ipv4MaxNodeLength) { ipv4MaxNodeLength =
 	 * startList.size(); ipv4MaxNodeIpStart = sourceRs.getString("ipv6_start");
 	 * ipv4MaxNodeIpEnd = sourceRs.getString("ipv6_end");
-	 * 
+	 *
 	 * } if (startList.size() < ipv4MinNodeLength) { ipv4MinNodeLength =
 	 * startList.size(); ipv4MinNodeIpStart = sourceRs.getString("ipv6_start");
 	 * ipv4MinNodeIpEnd = sourceRs.getString("ipv6_end"); } }
-	 * 
+	 *
 	 * nodeLists = ipv4FirstLevelCache.get(bytePrefixNum); // double check for
 	 * bug. should be null if (nodeLists == null) { nodeLists = new
 	 * IpRangeNode(); startList.clear(); // startList = new ArrayList<Long>();
@@ -2525,16 +2528,16 @@ public class HashCacheDao extends BaseDao {
 	 * nodeLists); } else { // // if (prevNodeLists != nodeLists)
 	 * logger.error("Unexpected new nodeLists != null" + bytePrefixNum +
 	 * " - ipv6_start" + sourceRs.getString("ipv6_start")); } }
-	 * 
+	 *
 	 * startList.add(bytestartNum); endList.add(byteEndNum);
 	 * locationIdList.add(locationId); prevBytePrefixNum = bytePrefixNum;
-	 * 
+	 *
 	 * } if (nodeLists != null) {
 	 * nodeLists.setStartArray(startList.stream().mapToLong(i->i).toArray());
 	 * nodeLists.setEndArray(endList.stream().mapToLong(i->i).toArray());
 	 * nodeLists
 	 * .setLocationIdArray(locationIdList.stream().mapToInt(i->i).toArray()); }
-	 * 
+	 *
 	 * if (startList.size() > ipv4MaxNodeLength) { ipv4MaxNodeLength =
 	 * startList.size(); ipv4MaxNodeIpStart = sourceRs.getString("ipv6_start");
 	 * ipv4MaxNodeIpEnd = sourceRs.getString("ipv6_end"); } if (startList.size()
@@ -2542,7 +2545,7 @@ public class HashCacheDao extends BaseDao {
 	 * ipv4MinNodeIpStart = sourceRs.getString("ipv6_start"); ipv4MinNodeIpEnd =
 	 * sourceRs.getString("ipv6_end"); } endTime =
 	 * Calendar.getInstance().getTimeInMillis();
-	 * 
+	 *
 	 * logger.debug("Ipv4 byte(s):" + startByteNum + " - dur(ms):" + (endTime -
 	 * startTime) + " - totalNodes:" + ipv4NumNodes + " - # rows loaded:" +
 	 * count + " - ipv4MaxNodeLength:" + ipv4MaxNodeLength +
@@ -2550,7 +2553,7 @@ public class HashCacheDao extends BaseDao {
 	 * ipv4MaxNodeIpStart + " - ipv4MaxNodeIpEnd: " + ipv4MaxNodeIpEnd +
 	 * " - ipv4MinNodeIpStart: " + ipv4MinNodeIpStart + " - ipv4MinNodeIpEnd: "
 	 * + ipv4MinNodeIpEnd);
-	 * 
+	 *
 	 * } catch (Throwable exc) { logger.error("", exc); } finally { } return
 	 * count; }
 	 */
@@ -2559,33 +2562,33 @@ public class HashCacheDao extends BaseDao {
 	 * public int loadCacheIpv4FlattenedCache (boolean flushCacheFlag, int
 	 * lowerImportId, int upperImportId) { int accCount = 0; long startTime,
 	 * endTime;
-	 * 
+	 *
 	 * accCount += this.loadCacheIpv4FirstFourBytes(flushCacheFlag, 10);
-	 * 
+	 *
 	 * startTime = Calendar.getInstance().getTimeInMillis(); accCount +=
 	 * this.loadCacheIpv4FirstThreeBytes(flushCacheFlag, lowerImportId,
 	 * upperImportId); endTime = Calendar.getInstance().getTimeInMillis();
 	 * logger.debug("loadCacheIpv4-: # rows loaded:" + accCount +
 	 * " - totalNodes:" + ipv4NumNodes + " - dur(ms):" + (endTime - startTime));
-	 * 
+	 *
 	 * startTime = Calendar.getInstance().getTimeInMillis(); accCount +=
 	 * this.loadCacheIpv4FirstTwoBytes(flushCacheFlag, lowerImportId,
 	 * upperImportId); endTime = Calendar.getInstance().getTimeInMillis();
 	 * logger.debug("loadCacheIpv4-: # rows loaded:" + accCount +
 	 * " - totalNodes:" + ipv4NumNodes + " - dur(ms):" + (endTime - startTime));
-	 * 
+	 *
 	 * startTime = Calendar.getInstance().getTimeInMillis(); accCount +=
 	 * this.loadCacheIpv4FirstOneByte_FlattenedCache(flushCacheFlag,
 	 * lowerImportId, upperImportId); endTime =
 	 * Calendar.getInstance().getTimeInMillis();
 	 * logger.debug("loadCacheIpv4-: # rows loaded:" + accCount +
 	 * " - totalNodes:" + ipv4NumNodes + " - dur(ms):" + (endTime - startTime));
-	 * 
+	 *
 	 * logger.debug("loadCacheIpv4-: maxSubRange:" + ipv4MaxSubRange +
 	 * " - minSubRange:" + ipv4MinSubRange); return accCount;
-	 * 
+	 *
 	 * }
-	 * 
+	 *
 	 * @SuppressWarnings({ "unchecked", "rawtypes" }) public long
 	 * loadCacheIpv4FirstThreeBytes (boolean flushCacheFlag, int lowerImportId,
 	 * int upperImportId) { long startTime, endTime; Map<String, Object>
@@ -2594,11 +2597,11 @@ public class HashCacheDao extends BaseDao {
 	 * bytePrefixStr, byteStartStr, byteEndStr, ipStart, ipEnd; long
 	 * bytePrefixNum, locationId; long bytestartNum, byteEndNum; HashMap<Long,
 	 * Long> secondLevelCache;
-	 * 
+	 *
 	 * try {
-	 * 
+	 *
 	 * startTime = Calendar.getInstance().getTimeInMillis();
-	 * 
+	 *
 	 * sourceConn = dataSource.getConnection(); //
 	 * DriverManager.getConnection(url, username, password); sourceStmt =
 	 * sourceConn.prepareStatement(
@@ -2609,30 +2612,30 @@ public class HashCacheDao extends BaseDao {
 	 * "and SUBSTRING(t.ipv6_start, 1, 4) != SUBSTRING(t.ipv6_end, 1, 4)  " +
 	 * "and SUBSTRING(t.ipv6_start, 1, 3) = SUBSTRING(t.ipv6_end, 1, 3)  " +
 	 * "order by bytePrefixStr, byteStartStr;" );
-	 * 
+	 *
 	 * sourceRs = sourceStmt.executeQuery(); endTime =
 	 * Calendar.getInstance().getTimeInMillis();
 	 * logger.debug("loadIpv6Lookup: sql execution: " + (endTime - startTime));
-	 * 
+	 *
 	 * startTime = Calendar.getInstance().getTimeInMillis(); while
 	 * (sourceRs.next()) { bytePrefixStr = sourceRs.getString("bytePrefixStr");
 	 * byteStartStr = sourceRs.getString("byteStartStr"); byteEndStr =
 	 * sourceRs.getString("byteEndStr"); locationId =
 	 * sourceRs.getInt("location_id");
-	 * 
+	 *
 	 * bytePrefixNum = Long.parseLong(bytePrefixStr, 16); bytestartNum =
 	 * Long.parseLong(byteStartStr, 16); byteEndNum = Long.parseLong(byteEndStr,
 	 * 16); range = (int)(byteEndNum - bytestartNum + 1); secondLevelCache =
 	 * ipv4FirstLevel_FlattenedCache.get(bytePrefixNum); if (secondLevelCache ==
 	 * null) { secondLevelCache = new HashMap<Long, Long>(range);
 	 * ipv4FirstLevel_FlattenedCache.put(bytePrefixNum, secondLevelCache); }
-	 * 
+	 *
 	 * for (long index = bytestartNum; index <= byteEndNum; index++) {
 	 * secondLevelCache.put(index, locationId); }
-	 * 
+	 *
 	 * if (range > ipv4MaxSubRange) { ipv4MaxSubRange = range; } if (range <
 	 * ipv4MinSubRange) { ipv4MinSubRange = range; } ipv4NumNodes += range;
-	 * 
+	 *
 	 * if ((count % 1000) == 0) { logger.debug
 	 * ("loadCacheIpv4FirstThreeBytes- totalNodes:" + ipv4NumNodes + " - rows:"
 	 * + count + " location_id:" + sourceRs.getInt("location_id") +
@@ -2640,16 +2643,16 @@ public class HashCacheDao extends BaseDao {
 	 * + " - byteEndStr: " + byteEndStr + " - ipv6_start: " +
 	 * sourceRs.getString("ipv6_start") + " - ipv6_end: " +
 	 * sourceRs.getString("ipv6_end")); }
-	 * 
+	 *
 	 * count++; } endTime = Calendar.getInstance().getTimeInMillis();
 	 * ipv4NumNodes += count;
-	 * 
+	 *
 	 * logger.debug("loadCacheIpv4FirstThreeBytes-: # rows loaded:" + count +
 	 * " - totalNodes:" + ipv4NumNodes + " - dur(ms):" + (endTime - startTime));
-	 * 
+	 *
 	 * } catch (Throwable exc) { logger.error("", exc); } finally { } return
 	 * count; }
-	 * 
+	 *
 	 * @SuppressWarnings({ "unchecked", "rawtypes" }) public int
 	 * loadCacheIpv4FirstTwoBytes (boolean flushCacheFlag, int lowerImportId,
 	 * int upperImportId) { long startTime, endTime; Map<String, Object>
@@ -2658,11 +2661,11 @@ public class HashCacheDao extends BaseDao {
 	 * bytePrefixStr, byteStartStr, byteEndStr, ipStart, ipEnd; long
 	 * bytePrefixNum, locationId;; long bytestartNum, byteEndNum; HashMap<Long,
 	 * Long> secondLevelCache;
-	 * 
+	 *
 	 * try {
-	 * 
+	 *
 	 * startTime = Calendar.getInstance().getTimeInMillis();
-	 * 
+	 *
 	 * sourceConn = dataSource.getConnection(); //
 	 * DriverManager.getConnection(url, username, password); sourceStmt =
 	 * sourceConn.prepareStatement(
@@ -2673,32 +2676,32 @@ public class HashCacheDao extends BaseDao {
 	 * "and SUBSTRING(t.ipv6_start, 1, 3) != SUBSTRING(t.ipv6_end, 1, 3)  " +
 	 * "and SUBSTRING(t.ipv6_start, 1, 2) = SUBSTRING(t.ipv6_end, 1, 2)  " +
 	 * "order by bytePrefixStr, byteStartStr;" );
-	 * 
+	 *
 	 * sourceRs = sourceStmt.executeQuery(); endTime =
 	 * Calendar.getInstance().getTimeInMillis();
 	 * logger.debug("loadIpv6Lookup: sql execution: " + (endTime - startTime));
-	 * 
+	 *
 	 * startTime = Calendar.getInstance().getTimeInMillis(); while
 	 * (sourceRs.next()) { bytePrefixStr = sourceRs.getString("bytePrefixStr");
 	 * byteStartStr = sourceRs.getString("byteStartStr"); byteEndStr =
 	 * sourceRs.getString("byteEndStr"); locationId =
 	 * sourceRs.getInt("location_id");
-	 * 
+	 *
 	 * bytePrefixNum = Long.parseLong(bytePrefixStr, 16); bytestartNum =
 	 * Long.parseLong(byteStartStr, 16); byteEndNum = Long.parseLong(byteEndStr,
 	 * 16); range = (int)(byteEndNum - bytestartNum + 1);
-	 * 
+	 *
 	 * secondLevelCache = ipv4FirstLevel_FlattenedCache.get(bytePrefixNum); if
 	 * (secondLevelCache == null) { secondLevelCache = new HashMap<Long, Long>
 	 * (range); ipv4FirstLevel_FlattenedCache.put(bytePrefixNum,
 	 * secondLevelCache); }
-	 * 
+	 *
 	 * for (long index = bytestartNum; index <= byteEndNum; index++) {
 	 * secondLevelCache.put(index, locationId); }
-	 * 
+	 *
 	 * if (range > ipv4MaxSubRange) { ipv4MaxSubRange = range; } if (range <
 	 * ipv4MinSubRange) { ipv4MinSubRange = range; } ipv4NumNodes += range;
-	 * 
+	 *
 	 * if ((count % 1000) == 0) { logger.debug
 	 * ("loadCacheIpv4FirstTwoBytes- totalNodes:" + ipv4NumNodes + " - rows:" +
 	 * count + " location_id:" + sourceRs.getInt("location_id") +
@@ -2707,13 +2710,13 @@ public class HashCacheDao extends BaseDao {
 	 * sourceRs.getString("ipv6_start") + " - ipv6_end: " +
 	 * sourceRs.getString("ipv6_end")); } count++; } endTime =
 	 * Calendar.getInstance().getTimeInMillis(); ipv4NumNodes += count;
-	 * 
+	 *
 	 * logger.debug("loadCacheIpv4FirstTwoBytes-: # rows loaded:" + count +
 	 * " - totalNodes:" + ipv4NumNodes + " - dur(ms):" + (endTime - startTime));
-	 * 
+	 *
 	 * } catch (Throwable exc) { logger.error("", exc); } finally { } return
 	 * count; }
-	 * 
+	 *
 	 * @SuppressWarnings({ "unchecked", "rawtypes" }) public int
 	 * loadCacheIpv4FirstOneByte_FlattenedCache (boolean flushCacheFlag, int
 	 * lowerImportId, int upperImportId) { long startTime, endTime; Map<String,
@@ -2723,11 +2726,11 @@ public class HashCacheDao extends BaseDao {
 	 * long bytePrefixNum, locationId; long bytestartNum, byteEndNum;
 	 * HashMap<Long, Long> secondLevelCache, secondLevelCacheTmp1 = null,
 	 * secondLevelCacheTmp2 = null;
-	 * 
+	 *
 	 * try {
-	 * 
+	 *
 	 * startTime = Calendar.getInstance().getTimeInMillis();
-	 * 
+	 *
 	 * sourceConn = dataSource.getConnection(); //
 	 * DriverManager.getConnection(url, username, password); sourceStmt =
 	 * sourceConn.prepareStatement(
@@ -2738,17 +2741,17 @@ public class HashCacheDao extends BaseDao {
 	 * "and SUBSTRING(t.ipv6_start, 1, 2) != SUBSTRING(t.ipv6_end, 1, 2)  " +
 	 * "and SUBSTRING(t.ipv6_start, 1, 1) = SUBSTRING(t.ipv6_end, 1, 1)  " +
 	 * "order by bytePrefixStr, byteStartStr;" );
-	 * 
+	 *
 	 * sourceRs = sourceStmt.executeQuery(); endTime =
 	 * Calendar.getInstance().getTimeInMillis();
 	 * logger.debug("loadIpv6Lookup: sql execution: " + (endTime - startTime));
-	 * 
+	 *
 	 * startTime = Calendar.getInstance().getTimeInMillis(); while
 	 * (sourceRs.next()) { bytePrefixStr = sourceRs.getString("bytePrefixStr");
 	 * byteStartStr = sourceRs.getString("byteStartStr"); byteEndStr =
 	 * sourceRs.getString("byteEndStr"); locationId =
 	 * sourceRs.getInt("location_id");
-	 * 
+	 *
 	 * count++; if ((count % 10) == 1) { logger.debug
 	 * ("loadCacheIpv4FirstOneByte- totalNodes:" + ipv4NumNodes + " - rows:" +
 	 * count + " location_id:" + sourceRs.getInt("location_id") +
@@ -2756,32 +2759,32 @@ public class HashCacheDao extends BaseDao {
 	 * + " - byteEndStr: " + byteEndStr + " - ipv6_start: " +
 	 * sourceRs.getString("ipv6_start") + " - ipv6_end: " +
 	 * sourceRs.getString("ipv6_end")); }
-	 * 
+	 *
 	 * bytePrefixNum = Long.parseLong(bytePrefixStr, 16); bytestartNum =
 	 * Long.parseLong(byteStartStr, 16); byteEndNum = Long.parseLong(byteEndStr,
 	 * 16); range = (int)(byteEndNum - bytestartNum + 1);
-	 * 
+	 *
 	 * secondLevelCache = ipv4FirstLevel_FlattenedCache.get(bytePrefixNum); if
 	 * (secondLevelCache == null) { secondLevelCache = new HashMap<Long, Long>
 	 * (range); ipv4FirstLevel_FlattenedCache.put(bytePrefixNum,
 	 * secondLevelCache); } else { //
 	 * logger.debug("secondLevelCache != null for " + bytePrefixNum); }
-	 * 
+	 *
 	 * for (long index = bytestartNum; index <= byteEndNum; index++) { if
 	 * (secondLevelCache.containsKey(index)) {
 	 * logger.error("secondLevelCache  != null for bytePrefixNum " +
 	 * bytePrefixNum + " - entry " + index); } secondLevelCache.put(index,
 	 * locationId); }
-	 * 
+	 *
 	 * if (range > ipv4MaxSubRange) { ipv4MaxSubRange = range; } if (range <
 	 * ipv4MinSubRange) { ipv4MinSubRange = range; } ipv4NumNodes += range;
-	 * 
+	 *
 	 * } endTime = Calendar.getInstance().getTimeInMillis(); ipv4NumNodes +=
 	 * count;
-	 * 
+	 *
 	 * logger.debug("loadCacheIpv4FirstOneByte-: # rows loaded:" + count +
 	 * " - totalNodes:" + ipv4NumNodes + " - dur(ms):" + (endTime - startTime));
-	 * 
+	 *
 	 * } catch (Throwable exc) { logger.error("", exc); } finally { } return
 	 * count; }
 	 */
@@ -2794,11 +2797,11 @@ public class HashCacheDao extends BaseDao {
 	 * ipStart, ipEnd; long bytePrefixNum, locationId; long bytestartNum,
 	 * byteEndNum; long numNodes; HashMap<Long, Long> secondLevelCache,
 	 * secondLevelCacheTmp1 = null, secondLevelCacheTmp2 = null;
-	 * 
+	 *
 	 * try {
-	 * 
+	 *
 	 * numNodes = 0; startTime = Calendar.getInstance().getTimeInMillis();
-	 * 
+	 *
 	 * sourceConn = dataSource.getConnection(); //
 	 * DriverManager.getConnection(url, username, password); sourceStmt =
 	 * sourceConn.prepareStatement(
@@ -2809,33 +2812,33 @@ public class HashCacheDao extends BaseDao {
 	 * "and SUBSTRING(t.ipv6_start, 1, 2) != SUBSTRING(t.ipv6_end, 1, 2)  " +
 	 * "and SUBSTRING(t.ipv6_start, 1, 1) = SUBSTRING(t.ipv6_end, 1, 1)  " +
 	 * "order by bytePrefixStr, byteStartStr;" );
-	 * 
+	 *
 	 * sourceRs = sourceStmt.executeQuery(); endTime =
 	 * Calendar.getInstance().getTimeInMillis();
 	 * logger.debug("loadIpv6Lookup: sql execution: " + (endTime - startTime));
-	 * 
+	 *
 	 * startTime = Calendar.getInstance().getTimeInMillis(); while
 	 * (sourceRs.next()) { bytePrefixStr = sourceRs.getString("bytePrefixStr");
 	 * byteStartStr = sourceRs.getString("byteStartStr"); byteEndStr =
 	 * sourceRs.getString("byteEndStr"); locationId =
 	 * sourceRs.getInt("location_id");
-	 * 
+	 *
 	 * count++; bytePrefixNum = Long.parseLong(bytePrefixStr, 16); bytestartNum
 	 * = Long.parseLong(byteStartStr, 16); byteEndNum =
 	 * Long.parseLong(byteEndStr, 16); range = (int)(byteEndNum - bytestartNum +
 	 * 1);
-	 * 
-	 * 
+	 *
+	 *
 	 * if (range > ipv4MaxSubRange) { ipv4MaxSubRange = range; } if (range <
 	 * ipv4MinSubRange) { ipv4MinSubRange = range; } numNodes += range;
-	 * 
+	 *
 	 * } endTime = Calendar.getInstance().getTimeInMillis(); numNodes += count;
 	 * ipv4NumNodes += numNodes; logger.debug
 	 * ("loadCacheIpv4FirstOneByte- numNodes:" + numNodes + " - rows:" + count +
 	 * " - dur(ms):" + (endTime - startTime));
-	 * 
+	 *
 	 * numNodes = 0; startTime = Calendar.getInstance().getTimeInMillis();
-	 * 
+	 *
 	 * sourceConn = dataSource.getConnection(); //
 	 * DriverManager.getConnection(url, username, password); sourceStmt =
 	 * sourceConn.prepareStatement(
@@ -2846,33 +2849,33 @@ public class HashCacheDao extends BaseDao {
 	 * "and SUBSTRING(t.ipv6_start, 1, 3) != SUBSTRING(t.ipv6_end, 1, 3)  " +
 	 * "and SUBSTRING(t.ipv6_start, 1, 2) = SUBSTRING(t.ipv6_end, 1, 2)  " +
 	 * "order by bytePrefixStr, byteStartStr;" );
-	 * 
+	 *
 	 * sourceRs = sourceStmt.executeQuery(); endTime =
 	 * Calendar.getInstance().getTimeInMillis();
 	 * logger.debug("loadIpv6Lookup: sql execution: " + (endTime - startTime));
-	 * 
+	 *
 	 * startTime = Calendar.getInstance().getTimeInMillis(); while
 	 * (sourceRs.next()) { bytePrefixStr = sourceRs.getString("bytePrefixStr");
 	 * byteStartStr = sourceRs.getString("byteStartStr"); byteEndStr =
 	 * sourceRs.getString("byteEndStr"); locationId =
 	 * sourceRs.getInt("location_id");
-	 * 
+	 *
 	 * count++; bytePrefixNum = Long.parseLong(bytePrefixStr, 16); bytestartNum
 	 * = Long.parseLong(byteStartStr, 16); byteEndNum =
 	 * Long.parseLong(byteEndStr, 16); range = (int)(byteEndNum - bytestartNum +
 	 * 1);
-	 * 
-	 * 
+	 *
+	 *
 	 * if (range > ipv4MaxSubRange) { ipv4MaxSubRange = range; } if (range <
 	 * ipv4MinSubRange) { ipv4MinSubRange = range; } numNodes += range;
-	 * 
+	 *
 	 * } endTime = Calendar.getInstance().getTimeInMillis(); numNodes += count;
 	 * ipv4NumNodes += numNodes; logger.debug
 	 * ("loadCacheIpv4FirstTwoBytes- numNodes:" + numNodes + " - rows:" + count
 	 * + " - dur(ms):" + (endTime - startTime));
-	 * 
+	 *
 	 * numNodes = 0; startTime = Calendar.getInstance().getTimeInMillis();
-	 * 
+	 *
 	 * sourceConn = dataSource.getConnection(); //
 	 * DriverManager.getConnection(url, username, password); sourceStmt =
 	 * sourceConn.prepareStatement(
@@ -2883,33 +2886,33 @@ public class HashCacheDao extends BaseDao {
 	 * "and SUBSTRING(t.ipv6_start, 1, 4) != SUBSTRING(t.ipv6_end, 1, 4)  " +
 	 * "and SUBSTRING(t.ipv6_start, 1, 3) = SUBSTRING(t.ipv6_end, 1, 3)  " +
 	 * "order by bytePrefixStr, byteStartStr;" );
-	 * 
+	 *
 	 * sourceRs = sourceStmt.executeQuery(); endTime =
 	 * Calendar.getInstance().getTimeInMillis();
 	 * logger.debug("loadIpv6Lookup: sql execution: " + (endTime - startTime));
-	 * 
+	 *
 	 * startTime = Calendar.getInstance().getTimeInMillis(); while
 	 * (sourceRs.next()) { bytePrefixStr = sourceRs.getString("bytePrefixStr");
 	 * byteStartStr = sourceRs.getString("byteStartStr"); byteEndStr =
 	 * sourceRs.getString("byteEndStr"); locationId =
 	 * sourceRs.getInt("location_id");
-	 * 
+	 *
 	 * count++; bytePrefixNum = Long.parseLong(bytePrefixStr, 16); bytestartNum
 	 * = Long.parseLong(byteStartStr, 16); byteEndNum =
 	 * Long.parseLong(byteEndStr, 16); range = (int)(byteEndNum - bytestartNum +
 	 * 1);
-	 * 
-	 * 
+	 *
+	 *
 	 * if (range > ipv4MaxSubRange) { ipv4MaxSubRange = range; } if (range <
 	 * ipv4MinSubRange) { ipv4MinSubRange = range; } numNodes += range;
-	 * 
+	 *
 	 * } endTime = Calendar.getInstance().getTimeInMillis(); numNodes += count;
 	 * ipv4NumNodes += numNodes; logger.debug
 	 * ("loadCacheIpv4FirstThreeBytes- numNodes:" + numNodes + " - rows:" +
 	 * count + " - dur(ms):" + (endTime - startTime)); logger.debug
 	 * ("loadCacheIpv4First to ThreeBytes- totalNodes:" + ipv4NumNodes);
-	 * 
-	 * 
+	 *
+	 *
 	 * } catch (Throwable exc) { logger.error("", exc); } finally { } return
 	 * count; }
 	 */
@@ -2922,39 +2925,39 @@ public class HashCacheDao extends BaseDao {
 	 * bytePrefixNum, locationId, range; long bytestartNum, byteEndNum; long
 	 * numNodes; HashMap<Long, Long> secondLevelCache, secondLevelCacheTmp1 =
 	 * null, secondLevelCacheTmp2 = null;
-	 * 
+	 *
 	 * try { numNodes = 0; startTime = Calendar.getInstance().getTimeInMillis();
-	 * 
+	 *
 	 * sourceConn = dataSource.getConnection(); //
 	 * DriverManager.getConnection(url, username, password); sourceStmt =
 	 * sourceConn.prepareStatement( "SELECT t.ipv6_start as byteStartStr, " +
 	 * "t.ipv6_end as byteEndStr, * " +
 	 * "FROM _shared.dbo.ipv6_city_A t  (nolock) " +
 	 * "WHERE len(t.ipv6_end) <= 4  " + "order by byteStartStr;" );
-	 * 
+	 *
 	 * sourceRs = sourceStmt.executeQuery(); endTime =
 	 * Calendar.getInstance().getTimeInMillis();
 	 * logger.debug("loadIpv6Lookup: sql execution: " + (endTime - startTime));
-	 * 
+	 *
 	 * startTime = Calendar.getInstance().getTimeInMillis(); while
 	 * (sourceRs.next()) { byteStartStr = sourceRs.getString("byteStartStr");
 	 * byteEndStr = sourceRs.getString("byteEndStr");
-	 * 
+	 *
 	 * bytestartNum = Long.parseLong(byteStartStr, 16); byteEndNum =
 	 * Long.parseLong(byteEndStr, 16); range = (int)(byteEndNum - bytestartNum +
 	 * 1);
-	 * 
+	 *
 	 * if (range > ipv4MaxSubRange) { ipv4MaxSubRange = range; } if (range <
 	 * ipv4MinSubRange) { ipv4MinSubRange = range; } numNodes += range; count++;
-	 * 
+	 *
 	 * } endTime = Calendar.getInstance().getTimeInMillis(); numNodes += count;
 	 * ipv4NumNodes += numNodes; logger.debug ("loadCacheIpv4All- numNodes:" +
 	 * numNodes + " - rows:" + count + " - maxSubRange:" + ipv4MaxSubRange +
 	 * " - minSubRange:" + ipv4MinSubRange + " - dur(ms):" + (endTime -
 	 * startTime)); logger.debug ("loadCacheIpv4All- totalNodes:" +
 	 * ipv4NumNodes);
-	 * 
-	 * 
+	 *
+	 *
 	 * } catch (Throwable exc) { logger.error("", exc); } finally { } return
 	 * count; }
 	 */
@@ -2966,9 +2969,9 @@ public class HashCacheDao extends BaseDao {
 	 * bytePrefixNum, locationId, range; long bytestartNum, byteEndNum; long
 	 * numNodes; HashMap<Long, Long> secondLevelCache, secondLevelCacheTmp1 =
 	 * null, secondLevelCacheTmp2 = null;
-	 * 
+	 *
 	 * try { numNodes = 0; startTime = Calendar.getInstance().getTimeInMillis();
-	 * 
+	 *
 	 * sourceConn = dataSource.getConnection(); //
 	 * DriverManager.getConnection(url, username, password); sourceStmt =
 	 * sourceConn.prepareStatement(
@@ -2976,20 +2979,20 @@ public class HashCacheDao extends BaseDao {
 	 * "SUBSTRING(t.ipv6_end, 1, 8)as byteEndStr, * " +
 	 * "FROM _shared.dbo.ipv6_city_A t  (nolock) " +
 	 * "WHERE len(t.ipv6_end) > 4  " + "order by byteStartStr;" );
-	 * 
+	 *
 	 * sourceRs = sourceStmt.executeQuery(); endTime =
 	 * Calendar.getInstance().getTimeInMillis();
 	 * logger.debug("loadIpv6Lookup: sql execution: " + (endTime - startTime));
-	 * 
+	 *
 	 * startTime = Calendar.getInstance().getTimeInMillis(); while
 	 * (sourceRs.next()) { byteStartStr = sourceRs.getString("byteStartStr");
 	 * byteEndStr = sourceRs.getString("byteEndStr");
-	 * 
+	 *
 	 * bytestartNum = Long.parseLong(byteStartStr, 16); byteEndNum =
 	 * Long.parseLong(byteEndStr, 16); range = (int)(byteEndNum - bytestartNum +
 	 * 1);
-	 * 
-	 * 
+	 *
+	 *
 	 * if (range > ipv4MaxSubRange) { ipv4MaxSubRange = range; } if (range <
 	 * ipv4MinSubRange) { ipv4MinSubRange = range; } numNodes += range; count++;
 	 * } endTime = Calendar.getInstance().getTimeInMillis(); numNodes += count;
@@ -2998,63 +3001,63 @@ public class HashCacheDao extends BaseDao {
 	 * " - minSubRange:" + ipv4MinSubRange + " - dur(ms):" + (endTime -
 	 * startTime)); logger.debug ("loadCacheIpvAll- totalNodes:" +
 	 * ipv4NumNodes);
-	 * 
-	 * 
+	 *
+	 *
 	 * } catch (Throwable exc) { logger.error("", exc); } finally { } return
 	 * count; }
 	 */
 
 	/*
 	 * public static void main (String args []) {
-	 * 
+	 *
 	 * BigInteger a = new BigInteger ("10"), b = new BigInteger ("20"), c = new
 	 * BigInteger ("9100000000000001", 16), d; BigInteger bigDecArray [] = {a,
 	 * b, c}; List<BigInteger> bdList = new ArrayList<BigInteger> ();
-	 * 
+	 *
 	 * d = new BigInteger ("9100000000000000", 16); int insertionPoint,
 	 * foundIndex = java.util.Arrays.binarySearch (bigDecArray, d); if
 	 * (foundIndex >= 0) { logger.debug("found " + d); } else { // non exact
 	 * match insertionPoint = ~foundIndex - 1; if (insertionPoint < 0) {
 	 * logger.debug("Not found  " + d); } else { logger.debug("insertionPoint:"
 	 * + insertionPoint); } }
-	 * 
+	 *
 	 * d = new BigInteger ("15"); foundIndex = java.util.Arrays.binarySearch
 	 * (bigDecArray, d); if (foundIndex >= 0) { logger.debug("found " + d); }
 	 * else { // non exact match insertionPoint = ~foundIndex - 1; if
 	 * (insertionPoint < 0) { logger.debug("Not found  " + d); } else {
 	 * logger.debug("insertionPoint:" + insertionPoint); } }
-	 * 
+	 *
 	 * d = new BigInteger ("20"); foundIndex = java.util.Arrays.binarySearch
 	 * (bigDecArray, d); if (foundIndex >= 0) { logger.debug("found " + d); }
 	 * else { // non exact match insertionPoint = ~foundIndex - 1; if
 	 * (insertionPoint < 0) { logger.debug("Not found  " + d); } else {
 	 * logger.debug("insertionPoint:" + insertionPoint); } }
-	 * 
+	 *
 	 * d = new BigInteger ("25"); foundIndex = java.util.Arrays.binarySearch
 	 * (bigDecArray, d); if (foundIndex >= 0) { logger.debug("found " + d); }
 	 * else { // non exact match insertionPoint = ~foundIndex - 1; if
 	 * (insertionPoint < 0) { logger.debug("Not found  " + d); } else {
 	 * logger.debug("insertionPoint:" + insertionPoint); } }
-	 * 
+	 *
 	 * d = new BigInteger ("30"); foundIndex = java.util.Arrays.binarySearch
 	 * (bigDecArray, d); if (foundIndex >= 0) { logger.debug("found " + d); }
 	 * else { // non exact match insertionPoint = ~foundIndex - 1; if
 	 * (insertionPoint < 0) { logger.debug("Not found  " + d); } else {
 	 * logger.debug("insertionPoint:" + insertionPoint); } }
-	 * 
+	 *
 	 * d = new BigInteger ("35"); foundIndex = java.util.Arrays.binarySearch
 	 * (bigDecArray, d); if (foundIndex >= 0) { logger.debug("found " + d); }
 	 * else { // non exact match insertionPoint = ~foundIndex - 1; if
 	 * (insertionPoint < 0) { logger.debug("Not found  " + d); } else {
 	 * logger.debug("insertionPoint:" + insertionPoint); } }
-	 * 
-	 * 
+	 *
+	 *
 	 * HashCacheDao hashCacheDao = new HashCacheDao ();
-	 * 
+	 *
 	 * hashCacheDao.loadCacheIpv6 (true, 3);
-	 * 
+	 *
 	 * }
-	 * 
+	 *
 	 * static public int getLocationIdBinarySearch_Test (String ipAddress) { int
 	 * locationId = 0; String bytePrefixStr, byteStr, byteEndStr; int
 	 * bytePrefixNum, endIndex; long byteNum = -1, locationIdNew; HashMap<Long,
@@ -3063,13 +3066,13 @@ public class HashCacheDao extends BaseDao {
 	 * 0x100000}; long endRangeArray [] = {0x07FFFF, 0x0FFFFF, 0x1274FF}; int
 	 * foundIndex, insertionPoint; List<Integer> startRangeList = new
 	 * ArrayList<Integer> (); int [] a;
-	 * 
+	 *
 	 * try {
-	 * 
+	 *
 	 * startRangeList.add(0x060000); startRangeList.add(0x0C0000);
 	 * startRangeList.add(0x100000); startRangeArray =
 	 * startRangeList.stream().mapToLong(i->i).toArray();
-	 * 
+	 *
 	 * byteStr = ipAddress.substring(2, 8); byteNum = Long.parseLong(byteStr,
 	 * 16); // byteNum = 0x0C00A0; foundIndex = java.util.Arrays.binarySearch
 	 * (startRangeArray, byteNum); if (foundIndex >= 0 && foundIndex <
@@ -3081,10 +3084,10 @@ public class HashCacheDao extends BaseDao {
 	 * <= endRangeArray[insertionPoint]) { logger.debug("found ipAddress " +
 	 * ipAddress + "- byteNum " + byteNum + " foundIndex:" + insertionPoint);
 	 * return insertionPoint; }
-	 * 
+	 *
 	 * // logger.debug("ipAddress " + ipAddress + "- byteNum " + byteNum +
 	 * " - insertionPoint " + insertionPoint); }
-	 * 
+	 *
 	 * logger.debug("Not found ipAddress " + ipAddress); return 0; } catch
 	 * (Throwable exc) { exc.printStackTrace(); throw exc; } }
 	 */
@@ -3095,14 +3098,14 @@ public class HashCacheDao extends BaseDao {
 	 * bytePrefixNum; int endIndex; long byteNum, locationIdNew; HashMap<Long,
 	 * Long> secondLevelCache, secondLevelCacheTmp1, secondLevelCacheTmp2;
 	 * boolean containFlag;
-	 * 
+	 *
 	 * try { bytePrefixNum = Long.parseLong(ipAddress, 16); if
 	 * (ipCache.fullBytesCache.containsKey(bytePrefixNum)) { return
 	 * ipCache.fullBytesCache.get(bytePrefixNum); }
-	 * 
+	 *
 	 * endIndex = 6; while (true) { bytePrefixStr = ipAddress.substring(0,
 	 * endIndex);
-	 * 
+	 *
 	 * bytePrefixNum = Long.parseLong(bytePrefixStr, 16); byteStr =
 	 * ipAddress.substring(bytePrefixStr.length(), 8); byteNum =
 	 * Long.parseLong(byteStr, 16); secondLevelCacheTmp1 =
@@ -3115,21 +3118,21 @@ public class HashCacheDao extends BaseDao {
 
 	/*
 	 * private HashMap<String, String> testfirstLevelCache;
-	 * 
+	 *
 	 * public int loadDummyData (boolean flushCacheFlag, int maxNumOps) {
-	 * 
+	 *
 	 * int numOps = 0; byte b1 = 15, b2 = 127, b3 = -127; StringBuffer key;
-	 * 
+	 *
 	 * try {
-	 * 
+	 *
 	 * logger.debug ("hnp.getHost():" + hnp.getHost() + " - maxNumOps:" +
 	 * maxNumOps); if (flushCacheFlag && testfirstLevelCache != null &&
 	 * testfirstLevelCache.size() > 0) { testfirstLevelCache.clear(); }
 	 * testfirstLevelCache = new HashMap<String, String>(maxNumOps);
-	 * 
+	 *
 	 * Object value; key = new StringBuffer ("foo"); long begin =
 	 * Calendar.getInstance().getTimeInMillis();
-	 * 
+	 *
 	 * for (numOps = 0; numOps <= maxNumOps; numOps++) {
 	 * testfirstLevelCache.put(key.toString() + numOps, "bar" + numOps); } long
 	 * elapsed = Calendar.getInstance().getTimeInMillis() - begin;
@@ -3137,7 +3140,7 @@ public class HashCacheDao extends BaseDao {
 	 * " - in sec:" + (float)((float)elapsed / 1000.0)); float opsrate =
 	 * (float)maxNumOps / (float)elapsed; logger.debug("Set ops/ms = " + opsrate
 	 * + " - ops/sec: " + opsrate * 1000);
-	 * 
+	 *
 	 * begin = Calendar.getInstance().getTimeInMillis(); for (numOps = 0; numOps
 	 * <= maxNumOps; numOps++) { value = testfirstLevelCache.get(key.toString()
 	 * + numOps); if (value == null) { logger.debug("key:" + key.toString() +
@@ -3147,9 +3150,9 @@ public class HashCacheDao extends BaseDao {
 	 * " - in sec:" + (float)((float)elapsed / 1000.0)); opsrate =
 	 * (float)maxNumOps / (float)elapsed; logger.debug("Get ops/ms = " + opsrate
 	 * + " - ops/sec: " + opsrate * 1000);
-	 * 
+	 *
 	 * } catch (Throwable exc) { exc.printStackTrace(); }
-	 * 
+	 *
 	 * return numOps; }
 	 */
 

@@ -1,7 +1,9 @@
+/*
+ * Michael M. Nguyen
+ */
 package com.getcake.geo.nginxhandler;
 
 /**
- * Hello world!
  *
  */
 
@@ -36,10 +38,6 @@ public  class GeoStatusHandler implements NginxJavaRingHandler {
 			
 			try {
 				jsonMapper = new ObjectMapper();
-				if (GeoIPLookupHandler.geoController == null) {
-					logger.debug("GeoInfoStatisticsApp - GeoIPLookupApp.geoController == null");
-				}
-	        	logger.debug("GeoStatusHandler init done");	    		
 			} catch (Throwable exc) {
 				exc.printStackTrace();
 				logger.error("", exc);				
@@ -58,9 +56,6 @@ public  class GeoStatusHandler implements NginxJavaRingHandler {
     		BufferedReader reader = null;
     		
         	try {
-            	// logger.debug("ipAddress: " + ipAddress + " loc id: " + geoInfo.getLocationId());
-        		// loadStatistics = GeoIPLookupApp.geoController.getGeoInfoStatistics();
-        		
             	String uplbFileName;
                 String absCurrPath = Paths.get("").toAbsolutePath().toString();            	
         	    uplbFileName = absCurrPath + "/uplb.txt";
@@ -68,26 +63,25 @@ public  class GeoStatusHandler implements NginxJavaRingHandler {
     	    	if (! tmpFile.exists()) {
     	    		logger.debug(uplbFileName + " does not exist");
                     return new Object[] { 
-                		NGX_HTTP_SERVICE_UNAVAILABLE, //http status 200
-                        ArrayMap.create(CONTENT_TYPE, "text/plain"), //headers map
+                		NGX_HTTP_SERVICE_UNAVAILABLE, 
+                        ArrayMap.create(CONTENT_TYPE, "text/plain"), 
                         ""                        		
                         };
     	    	}
         	    
     			fileInputStream = new FileInputStream (uplbFileName);
-    	    	// Read one text line at a time and display.
     	        reader = new BufferedReader(new InputStreamReader(fileInputStream));
 	            line = reader.readLine();
 	            
         		healthCheckResults = GeoIPLookupHandler.geoController.healthCheck();
                 return new Object[] { 
-                    NGX_HTTP_OK, //http status 200
+                    NGX_HTTP_OK, 
                     ArrayMap.create(CONTENT_TYPE, "text/plain"), healthCheckResults                       		
                     };        			
         	} catch (Throwable exc) {
         		logger.error("", exc);
                 return new Object[] { 
-                		NGX_HTTP_INTERNAL_SERVER_ERROR, //http status 200
+                		NGX_HTTP_INTERNAL_SERVER_ERROR, 
                         ArrayMap.create(CONTENT_TYPE, "text/plain"), 
                         exc.getMessage()};        		
         	} finally {

@@ -1,7 +1,9 @@
+/*
+ * Michael M. Nguyen
+ */
 package com.getcake.geo.nginxhandler;
 
 /**
- * Hello world!
  *
  */
 
@@ -38,11 +40,6 @@ public  class GeoInfoStatisticsHandler implements NginxJavaRingHandler {
 			
 			try {
 				jsonMapper = new ObjectMapper();
-				if (GeoIPLookupHandler.geoController == null) {
-					logger.debug("GeoInfoStatisticsApp - GeoIPLookupApp.geoController == null");
-				}
-	        	logger.debug("GeoInfoStatisticsHandler init done");
-	    		
 			} catch (Throwable exc) {
 				exc.printStackTrace();
 				logger.error("", exc);				
@@ -59,31 +56,25 @@ public  class GeoInfoStatisticsHandler implements NginxJavaRingHandler {
         	
         	try { 
         		if ("get".equalsIgnoreCase((String)request.get("request-method"))) {
-                	// logger.debug("ipAddress: " + ipAddress + " loc id: " + geoInfo.getLocationId());
-            		// loadStatistics = GeoIPLookupApp.geoController.getGeoInfoStatistics();
                     return new Object[] { 
-                            NGX_HTTP_OK, //http status 200
-                            ArrayMap.create(CONTENT_TYPE, "text/plain"), //headers map
+                            NGX_HTTP_OK, 
+                            ArrayMap.create(CONTENT_TYPE, "text/plain"), 
                             jsonMapper.writeValueAsString(GeoIPLookupHandler.geoController.getGeoInfoStatistics())                        		
-                            //response body can be string, File or Array/Collection of them
                             };        			
         		}
         		
-            	// logger.debug("ipAddress: " + ipAddress + " loc id: " + geoInfo.getLocationId());
-        		// loadStatistics = GeoIPLookupApp.geoController.getGeoInfoStatistics();
                 return new Object[] { 
-                        NGX_HTTP_OK, //http status 200
-                        ArrayMap.create(CONTENT_TYPE, "text/plain"), //headers map
+                        NGX_HTTP_OK, 
+                        ArrayMap.create(CONTENT_TYPE, "text/plain"), 
                         jsonMapper.writeValueAsString(GeoIPLookupHandler.geoController.resetGeoInfoStatistics())                        		
-                        //response body can be string, File or Array/Collection of them
                         };
         		
         		
         	} catch (Throwable exc) {
         		logger.error("", exc);
                 return new Object[] { 
-                		NGX_HTTP_INTERNAL_SERVER_ERROR, //http status 200
-                        ArrayMap.create(CONTENT_TYPE, "text/plain"), //headers map
+                		NGX_HTTP_INTERNAL_SERVER_ERROR, 
+                        ArrayMap.create(CONTENT_TYPE, "text/plain"), 
                         CakeCommonUtil.convertExceptionToString (exc) };        		
         	}
         }

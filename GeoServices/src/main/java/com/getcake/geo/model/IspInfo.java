@@ -1,3 +1,6 @@
+/*
+ * Michael M. Nguyen
+ */
 package com.getcake.geo.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -10,7 +13,7 @@ public class IspInfo {
 	public void setProviderName (String providerName) {
 		this.providerName = providerName;
 	}
-	
+
 	@JsonProperty("isp_provider_name")
 	public String getProviderName () {
 		return this.providerName;
@@ -20,11 +23,11 @@ public class IspInfo {
 	public void setIspId (int ispId) {
 		this.ispId = ispId;
 	}
-	
+
 	@JsonProperty("isp_id")
 	public int getIspId () {
 		return this.ispId;
 	}
-	
-	
+
+
 }
